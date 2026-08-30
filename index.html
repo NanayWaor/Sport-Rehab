@@ -1,0 +1,3810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Baúl del Movimiento 2.0</title>
+<style>
+:root{
+  --green:#1D9E75; --green-light:#E1F5EE; --green-dark:#0F6E56;
+  --blue:#378ADD; --blue-light:#E6F1FB;
+  --purple:#7F77DD; --purple-light:#EEEDFE;
+  --amber:#BA7517; --amber-light:#FAEEDA;
+  --coral:#D85A30; --coral-light:#FAECE7;
+  --pink:#D4537E; --pink-light:#FBEAF0;
+  --teal:#2A9D9D; --teal-light:#E3F5F5;
+  --gray:#888780; --gray-light:#F1EFE8;
+  --bg:#f8f8f6; --surface:#fff; --border:#e5e3de;
+  --text:#1a1a18; --text2:#5f5e5a; --text3:#9a9894;
+  --radius:14px; --shadow:0 1px 4px rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#171715; --surface:#212220; --border:#333331;
+    --text:#f0ede8; --text2:#a8a6a0; --text3:#68665f;
+    --green-light:#0d3d2e; --blue-light:#0d2a45; --purple-light:#1e1c3d;
+    --amber-light:#2e1f08; --coral-light:#2e1508; --pink-light:#2e0f1f; --teal-light:#0c2d2d; --gray-light:#2a2a28;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
+body{padding-bottom:70px;}
+button,input,textarea,select{font-family:inherit;}
+::-webkit-scrollbar{display:none;}
+
+/* HEADER */
+.topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-title{font-size:19px;font-weight:800;display:flex;align-items:center;gap:8px;}
+.topbar-actions{display:flex;gap:8px;}
+.icon-btn{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--text2);}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--gray);}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.err{background:var(--coral);}
+
+/* NAV */
+.nav{display:flex;background:var(--surface);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:60;padding-bottom:env(safe-area-inset-bottom);}
+.nav-btn{flex:1;padding:9px 2px 8px;text-align:center;font-size:10.5px;color:var(--text3);cursor:pointer;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.nav-btn.active{color:var(--green);}
+.nav-icon{font-size:20px;line-height:1;}
+
+.screen{display:none;padding-bottom:24px;}
+.screen.active{display:block;}
+
+/* generic */
+.px{padding-left:16px;padding-right:16px;}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 10px;}
+.section-title{font-size:16px;font-weight:800;}
+.section-sub{font-size:12.5px;color:var(--text3);margin-top:2px;}
+.link-btn{font-size:13px;color:var(--green);cursor:pointer;font-weight:600;background:none;border:none;}
+.chip-row{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 10px;}
+.chip{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:18px;background:var(--surface);border:1.5px solid var(--border);font-size:12.5px;font-weight:600;color:var(--text2);white-space:nowrap;cursor:pointer;}
+.chip.active{background:var(--green);border-color:var(--green);color:#fff;}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px 10px;box-shadow:var(--shadow);overflow:hidden;}
+.empty-state{text-align:center;padding:40px 24px;color:var(--text3);}
+.empty-state .e-icon{font-size:38px;margin-bottom:10px;}
+.empty-state .e-title{font-size:14.5px;font-weight:700;color:var(--text2);margin-bottom:4px;}
+.empty-state .e-sub{font-size:12.5px;line-height:1.5;}
+.btn{padding:11px 16px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;border:none;text-align:center;}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border);}
+.btn-block{width:100%;}
+.btn-danger{background:var(--coral-light);color:var(--coral);}
+.form-group{margin-bottom:12px;}
+.form-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.03em;}
+.form-input,.form-textarea,.form-select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px;outline:none;}
+.form-textarea{resize:vertical;min-height:70px;line-height:1.4;}
+.form-hint{font-size:11.5px;color:var(--text3);margin-top:4px;line-height:1.4;}
+.toggle-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.toggle-pill{padding:7px 12px;border-radius:16px;border:1.5px solid var(--border);font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer;background:var(--surface);}
+.toggle-pill.on{color:#fff;border-color:transparent;}
+
+/* DASHBOARD */
+.dash-header{padding:18px 16px 0;}
+.dash-date{font-size:13px;color:var(--text3);text-transform:capitalize;}
+.dash-title{font-size:25px;font-weight:800;margin-top:2px;}
+.stat-row{display:flex;gap:10px;padding:14px 16px 4px;overflow-x:auto;}
+.stat-card{flex-shrink:0;min-width:110px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+.stat-num{font-size:20px;font-weight:800;}
+.stat-label{font-size:11px;color:var(--text3);font-weight:600;margin-top:2px;}
+.progress-track{height:7px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:8px;}
+.progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width .4s;}
+
+.plan-banner{margin:14px 16px;background:linear-gradient(135deg,var(--green),var(--green-dark));border-radius:var(--radius);padding:16px;color:#fff;}
+.plan-banner-label{font-size:11px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.05em;}
+.plan-banner-title{font-size:17px;font-weight:800;margin-top:3px;}
+.plan-banner-sub{font-size:12.5px;opacity:.9;margin-top:4px;}
+
+.pain-row{display:flex;gap:8px;padding:0 16px;overflow-x:auto;}
+.pain-chip{flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;min-width:88px;text-align:center;}
+.pain-chip .pl{font-size:10.5px;color:var(--text3);font-weight:700;}
+.pain-num{font-size:18px;font-weight:800;margin-top:2px;}
+
+/* EXERCISE CARD (library + agenda) */
+.ex-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px 10px;overflow:hidden;box-shadow:var(--shadow);}
+.ex-card.done{opacity:.55;}
+.ex-main{display:flex;gap:0;cursor:pointer;}
+.ex-color-bar{width:5px;flex-shrink:0;}
+.ex-thumb{width:64px;height:64px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;margin:12px 0 12px 12px;border-radius:10px;}
+.ex-content{flex:1;padding:12px 14px;min-width:0;}
+.ex-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.ex-name{font-size:14.5px;font-weight:700;line-height:1.3;}
+.ex-cats{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+.ex-desc{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.4;}
+.ex-meta{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.ex-meta span{font-size:10.5px;color:var(--text3);}
+.ex-actions{display:flex;align-items:center;gap:6px;padding:0 12px 12px;}
+.btn-sched{flex:1;padding:8px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);}
+.btn-icon-sm{width:34px;height:34px;border-radius:9px;background:var(--bg);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+
+/* LIBRARY */
+.lib-search{margin:12px 16px;position:relative;}
+.lib-search input{width:100%;padding:11px 38px 11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;background:var(--surface);color:var(--text);outline:none;}
+.lib-search-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--text3);pointer-events:none;}
+.subcat-row{display:flex;gap:7px;overflow-x:auto;padding:0 16px 10px;}
+.subcat-chip{flex-shrink:0;padding:5px 11px;border-radius:14px;background:var(--bg);border:1px solid var(--border);font-size:11.5px;font-weight:600;color:var(--text2);cursor:pointer;white-space:nowrap;}
+.subcat-chip.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+.ef-cat-detail{border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;margin-top:8px;}
+.ef-cat-detail-title{font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.ef-cat-detail-level{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.ef-cat-detail-level:last-child{margin-bottom:0;}
+.lib-count{padding:0 16px 8px;font-size:12px;color:var(--text3);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.active{display:flex;}
+.modal-sheet{background:var(--surface);width:100%;max-width:560px;max-height:92vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden;}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 4px;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 12px;border-bottom:1px solid var(--border);}
+.modal-head-title{font-size:16px;font-weight:800;}
+.modal-close{width:32px;height:32px;border-radius:50%;background:var(--bg);border:none;font-size:16px;color:var(--text2);cursor:pointer;}
+.modal-body{overflow-y:auto;padding:16px;}
+.modal-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;}
+
+/* EX DETAIL */
+.exd-hero{width:100%;height:150px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:52px;margin-bottom:14px;}
+.exd-cats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.exd-tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;}
+.exd-tab{flex-shrink:0;padding:7px 13px;border-radius:10px;font-size:12.5px;font-weight:700;color:var(--text2);background:var(--bg);border:1px solid var(--border);cursor:pointer;}
+.exd-tab.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+.exd-panel{display:none;}
+.exd-panel.active{display:block;}
+.exd-block{margin-bottom:14px;}
+.exd-block-label{font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.exd-block-body{font-size:13.5px;line-height:1.55;color:var(--text);white-space:pre-wrap;}
+.exd-list{list-style:none;}
+.exd-list li{font-size:13.5px;line-height:1.5;padding:6px 0 6px 22px;position:relative;border-bottom:1px solid var(--border);}
+.exd-list li:last-child{border-bottom:none;}
+.exd-list li:before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:800;}
+.exd-note{background:var(--amber-light);border:1px solid var(--amber);border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.45;}
+.exd-note b{color:var(--amber);}
+
+/* CALENDAR */
+.cal-header{padding:16px;display:flex;align-items:center;justify-content:space-between;}
+.cal-nav{display:flex;align-items:center;gap:12px;}
+.cal-month{font-size:17px;font-weight:800;text-transform:capitalize;}
+.cal-arrow{width:32px;height:32px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 12px 12px;}
+.cal-dow{text-align:center;font-size:10.5px;font-weight:700;color:var(--text3);padding:4px 0;text-transform:uppercase;}
+.cal-day{text-align:center;padding:5px 2px;font-size:13px;cursor:pointer;border-radius:9px;color:var(--text2);min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;}
+.cal-day.today{font-weight:800;color:var(--green);}
+.cal-day.selected{background:var(--green);color:#fff;}
+.cal-day.other{opacity:.3;}
+.cal-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:26px;}
+.cal-day .dot{width:5px;height:5px;border-radius:50%;}
+.cal-day-panel{margin:0 16px 14px;background:var(--surface);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);}
+.cal-day-title{font-size:15px;font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.planned-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.planned-item:last-child{border-bottom:none;}
+.planned-check{width:22px;height:22px;border-radius:7px;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;}
+.planned-check.done{background:var(--green);border-color:var(--green);}
+.planned-body{flex:1;min-width:0;}
+.planned-name{font-size:13.5px;font-weight:600;}
+.planned-name.done{text-decoration:line-through;color:var(--text3);}
+.planned-sub{font-size:11.5px;color:var(--text3);margin-top:1px;}
+.planned-rm{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;}
+.pain-log-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.pain-input{flex:1;min-width:70px;}
+.pain-input label{font-size:10.5px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px;}
+.pain-input input{width:100%;padding:7px;border:1px solid var(--border);border-radius:8px;text-align:center;font-size:14px;font-weight:700;background:var(--bg);color:var(--text);}
+
+/* PLANS */
+.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px 12px;overflow:hidden;box-shadow:var(--shadow);}
+.plan-card-top{padding:14px 16px;}
+.plan-card-title{font-size:15.5px;font-weight:800;}
+.plan-card-sub{font-size:12px;color:var(--text3);margin-top:3px;}
+.plan-card-desc{font-size:12.5px;color:var(--text2);margin-top:8px;line-height:1.45;}
+.plan-day-pills{display:flex;gap:6px;padding:0 16px 14px;overflow-x:auto;}
+.plan-day-pill{flex-shrink:0;padding:6px 11px;border-radius:10px;background:var(--bg);border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--text2);white-space:nowrap;}
+.plan-card-actions{display:flex;gap:8px;padding:0 16px 14px;}
+
+/* FAB */
+.fab{position:fixed;bottom:82px;right:18px;width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;font-size:26px;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;z-index:55;display:flex;align-items:center;justify-content:center;}
+
+/* TOAST */
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:300;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
+.toast.show{opacity:1;}
+
+/* SETTINGS */
+.settings-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px 14px;padding:16px;}
+.settings-block h3{font-size:14.5px;font-weight:800;margin-bottom:4px;}
+.settings-block p{font-size:12.5px;color:var(--text2);line-height:1.5;margin-bottom:10px;}
+.status-line{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2);margin:8px 0;}
+.mini-steps{font-size:12px;color:var(--text2);line-height:1.7;padding-left:18px;margin-bottom:10px;}
+.code-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:monospace;font-size:11.5px;color:var(--text2);word-break:break-all;margin:6px 0;}
+
+@media (min-width:640px){
+  body{max-width:640px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border);}
+  .nav,.topbar{max-width:640px;left:50%;transform:translateX(-50%);}
+}
+
+/* DESKTOP: deslizador visible para filas horizontales (categorías, subcategorías, etc.) */
+.hscroll{cursor:grab;}
+.hscroll.dragging{cursor:grabbing;user-select:none;}
+@media (min-width:641px){
+  .hscroll{scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+  .hscroll::-webkit-scrollbar{display:block;height:7px;}
+  .hscroll::-webkit-scrollbar-track{background:transparent;}
+  .hscroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  .hscroll::-webkit-scrollbar-thumb:hover{background:var(--text3);}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">🗂️ <span>Baúl del Movimiento</span></div>
+  <div class="topbar-actions">
+    <div class="icon-btn" id="sync-indicator" onclick="switchScreen('ajustes')" title="Estado de sincronización">
+      <span class="sync-dot" id="sync-dot"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div class="screen active" id="screen-dashboard">
+  <div class="dash-header">
+    <div class="dash-date" id="dash-date"></div>
+    <div class="dash-title">Hoy</div>
+  </div>
+
+  <div id="dash-plan-banner"></div>
+
+  <div class="stat-row" id="dash-stats"></div>
+
+  <div class="section-header">
+    <div>
+      <div class="section-title">Plan de hoy</div>
+      <div class="section-sub" id="dash-today-sub"></div>
+    </div>
+    <span class="link-btn" onclick="openFullHistoryModal()">📊 Historial</span>
+    <span class="link-btn" onclick="switchScreen('calendario')">Ver calendario</span>
+  </div>
+  <div id="dash-today-list"></div>
+
+  <div class="section-header">
+    <div class="section-title">Seguimiento de lesiones</div>
+    <span class="link-btn" onclick="openPainLogModal(todayStr())">Registrar hoy</span>
+  </div>
+  <div class="pain-row hscroll" id="dash-pain-row"></div>
+
+  <div class="section-header">
+    <div class="section-title">Biblioteca rápida</div>
+    <span class="link-btn" onclick="switchScreen('biblioteca')">Ver todo</span>
+  </div>
+  <div class="chip-row hscroll" id="dash-cats-row"></div>
+</div>
+
+<!-- ============ BIBLIOTECA ============ -->
+<div class="screen" id="screen-biblioteca">
+  <div class="section-header" style="padding-top:16px;">
+    <div>
+      <div class="section-title">Biblioteca de ejercicios</div>
+      <div class="section-sub">Consulta ejecución, respiración y tips</div>
+    </div>
+  </div>
+  <div class="lib-search">
+    <input type="text" id="lib-search-input" placeholder="Buscar ejercicio, técnica, músculo...">
+    <span class="lib-search-icon">🔎</span>
+  </div>
+  <div class="chip-row hscroll" id="lib-cats-row"></div>
+  <div class="subcat-row hscroll" id="lib-subcats-row"></div>
+  <div class="lib-count" id="lib-count"></div>
+  <div id="lib-list"></div>
+</div>
+
+<!-- ============ CALENDARIO ============ -->
+<div class="screen" id="screen-calendario">
+  <div class="cal-header">
+    <div class="cal-month" id="cal-month-label"></div>
+    <div class="cal-nav">
+      <button class="cal-arrow" onclick="calChangeMonth(-1)">‹</button>
+      <button class="cal-arrow" onclick="calGoToday()">•</button>
+      <button class="cal-arrow" onclick="calChangeMonth(1)">›</button>
+    </div>
+  </div>
+  <div class="cal-grid" id="cal-dow-row"></div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div class="cal-day-panel" id="cal-day-panel"></div>
+</div>
+
+<!-- ============ TAREAS ============ -->
+<div class="screen" id="screen-tareas">
+  <div class="section-header" style="padding-top:16px;">
+    <div>
+      <div class="section-title">Tareas</div>
+      <div class="section-sub">Puntuales y recurrentes — aparecen también en el Calendario</div>
+    </div>
+  </div>
+  <div id="tasks-list"></div>
+</div>
+
+<!-- ============ PLANES ============ -->
+<div class="screen" id="screen-planes">
+  <div class="section-header" style="padding-top:16px;">
+    <div>
+      <div class="section-title">Programas</div>
+      <div class="section-sub">Plantillas del plan de 12 semanas + tus propios programas</div>
+    </div>
+  </div>
+  <div id="assignments-section"></div>
+  <div id="plans-list"></div>
+</div>
+
+<!-- ============ AJUSTES ============ -->
+<div class="screen" id="screen-ajustes">
+  <div class="section-header" style="padding-top:16px;">
+    <div class="section-title">Ajustes y Dropbox</div>
+  </div>
+
+  <div class="settings-block">
+    <h3>☁️ Copia de seguridad en Dropbox</h3>
+    <p>Conecta tu Dropbox para que la app guarde automáticamente todos tus ejercicios, planes y registros en un archivo <b>/Apps/BaulDelMovimiento/datos.json</b> dentro de tu cuenta. Se sincroniza solo, sin backups manuales.</p>
+    <p style="background:var(--amber-light);border:1px solid var(--amber);border-radius:10px;padding:8px 10px;color:var(--text);"><b>Importante:</b> esto solo funciona si abres la app desde una dirección <b>https://</b> (por ejemplo, la app subida a GitHub Pages, Netlify o similar). Abrirla como archivo local (file://) o por http:// sin cifrar impedirá conectar con Dropbox.</p>
+    <div class="status-line"><span class="sync-dot" id="settings-sync-dot"></span><span id="settings-sync-text">No conectado</span></div>
+    <div id="dropbox-setup-fields"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" id="dropbox-connect-btn" onclick="dropboxConnect()">Conectar con Dropbox</button>
+      <button class="btn btn-secondary" onclick="dropboxSyncNow()">Sincronizar ahora</button>
+      <button class="btn btn-secondary" onclick="dropboxDisconnect()">Desconectar</button>
+    </div>
+    <div class="mini-steps" style="margin-top:12px;">
+      <b style="display:block;margin-bottom:6px;color:var(--text2);">Cómo conectarlo (una vez, 3 min):</b>
+      1. Ve a <b>dropbox.com/developers/apps</b> → Create app → Scoped access → Full Dropbox (o "App folder").<br>
+      2. En "Permissions" activa <b>files.content.write</b> y <b>files.content.read</b> → Submit.<br>
+      3. En "Settings" copia tu <b>App key</b> y pégalo abajo.<br>
+      4. En "Redirect URIs" añade exactamente esta URL y pégala también abajo (debe coincidir con dónde abres esta app).<br>
+      5. Pulsa "Conectar con Dropbox" y autoriza.
+    </div>
+  </div>
+
+  <div class="settings-block">
+    <h3>💾 Copia local</h3>
+    <p>Exporta o importa un backup COMPLETO de la app en un archivo JSON: ejercicios y categorías (de fábrica y propios), planes (Fase 1/2/3 con tus ediciones + tus planes propios), calendario/agenda y registros de dolor. Es independiente de la sincronización con Dropbox.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="exportJSON()">Exportar JSON</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Importar JSON</button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)">
+  </div>
+
+  <div class="settings-block">
+    <h3>🗃️ Categorías y gestión</h3>
+    <p>Añade categorías propias o gestiona las existentes de la biblioteca.</p>
+    <button class="btn btn-secondary btn-block" onclick="openCategoryManager()">Gestionar categorías</button>
+  </div>
+
+  <div class="settings-block">
+    <h3>⚠️ Reiniciar</h3>
+    <p>Borra todos los datos guardados en este dispositivo (no afecta a Dropbox salvo que sincronices después).</p>
+    <button class="btn btn-danger btn-block" onclick="resetAllData()">Borrar todos los datos locales</button>
+  </div>
+</div>
+
+<button class="fab" id="fab-btn" onclick="fabAction()">+</button>
+
+<div class="nav">
+  <button class="nav-btn active" data-screen="dashboard" onclick="switchScreen('dashboard')"><span class="nav-icon">🏠</span>Hoy</button>
+  <button class="nav-btn" data-screen="biblioteca" onclick="switchScreen('biblioteca')"><span class="nav-icon">📚</span>Biblioteca</button>
+  <button class="nav-btn" data-screen="calendario" onclick="switchScreen('calendario')"><span class="nav-icon">📅</span>Calendario</button>
+  <button class="nav-btn" data-screen="tareas" onclick="switchScreen('tareas')"><span class="nav-icon">✅</span>Tareas</button>
+  <button class="nav-btn" data-screen="planes" onclick="switchScreen('planes')"><span class="nav-icon">🗓️</span>Planes</button>
+  <button class="nav-btn" data-screen="ajustes" onclick="switchScreen('ajustes')"><span class="nav-icon">⚙️</span>Ajustes</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============ MODAL: DETALLE EJERCICIO ============ -->
+<div class="modal-overlay" id="modal-exdetail">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title" id="exd-title">Ejercicio</div>
+      <button class="modal-close" onclick="closeModal('modal-exdetail')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="exd-hero" id="exd-hero">🧘</div>
+      <div class="exd-cats" id="exd-cats"></div>
+      <div class="exd-tabs hscroll" id="exd-tabs"></div>
+      <div id="exd-panels"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" style="flex:0 0 auto;" onclick="openExerciseEditor(currentDetailExId)">✏️ Editar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="openScheduleModal(currentDetailExId)">📅 Programar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: EDITAR/CREAR EJERCICIO ============ -->
+<div class="modal-overlay" id="modal-exeditor">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title" id="exeditor-title">Nuevo ejercicio</div>
+      <button class="modal-close" onclick="closeModal('modal-exeditor')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="ef-name" placeholder="Ej: Face Pulls">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categorías (puede pertenecer a varias)</label>
+        <div class="toggle-row" id="ef-cats"></div>
+        <div id="ef-cats-detail"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icono (emoji)</label>
+        <input class="form-input" id="ef-icon" placeholder="🧘" maxlength="4" style="width:70px;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción breve</label>
+        <textarea class="form-textarea" id="ef-desc" placeholder="Qué es y para qué sirve..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">📹 Vídeo de referencia</label>
+        <div id="ef-video-status" style="display:none;align-items:center;gap:10px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">
+          <div style="flex:1;font-size:12.5px;" id="ef-video-status-label"></div>
+          <button type="button" class="btn btn-secondary" style="padding:7px 10px;font-size:12px;flex-shrink:0;" onclick="testOpenEditorVideo()">▶️ Probar</button>
+          <button type="button" class="btn btn-danger" style="padding:7px 10px;font-size:12px;flex-shrink:0;" onclick="clearExerciseVideo()">Quitar</button>
+        </div>
+        <input type="file" accept="video/*" id="ef-video-file" style="display:none;" onchange="handleExerciseVideoFileFallback(this)">
+        <button type="button" class="btn btn-secondary btn-block" id="ef-video-link-btn" onclick="linkExerciseVideoFile()">📎 Enlazar vídeo de la galería (sin subirlo)</button>
+        <input type="hidden" id="ef-video">
+        <input type="hidden" id="ef-video-type">
+        <div class="form-hint" id="ef-video-hint">El vídeo se queda en tu móvil: la app solo guarda un enlace a él, no lo sube ni lo copia. También puedes pegar una URL (YouTube, Drive...) en vez de enlazar un archivo:</div>
+        <input class="form-input" id="ef-video-url" placeholder="https://..." style="margin-top:8px;" oninput="setExerciseVideoUrl(this.value.trim())">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ejecución / movimiento (un paso por línea)</label>
+        <textarea class="form-textarea" id="ef-execution" placeholder="Posición inicial...&#10;Descenso...&#10;Ascenso..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Respiración (un paso por línea)</label>
+        <textarea class="form-textarea" id="ef-breathing" placeholder="Inhala en la fase excéntrica...&#10;Exhala en el esfuerzo..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tips / puntos clave (uno por línea)</label>
+        <textarea class="form-textarea" id="ef-tips" placeholder="Rodillas no caen hacia dentro&#10;Peso en talones"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Variantes (ejercicios de la biblioteca)</label>
+        <div class="toggle-row" id="ef-variants-chips"></div>
+        <button type="button" class="btn btn-secondary" style="margin-top:8px;" onclick="openVariantPicker()">+ Añadir variante</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nota de lesión / check</label>
+        <textarea class="form-textarea" id="ef-injury" placeholder="Si duele X, haz Y en su lugar..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Series/reps sugeridas</label>
+        <input class="form-input" id="ef-setsreps" placeholder="Ej: 3x12 · 5x30 seg">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duración estimada</label>
+        <input class="form-input" id="ef-duration" placeholder="Ej: 5 min">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Material / equipo</label>
+        <input class="form-input" id="ef-equipment" placeholder="Ej: Goma, banco, pelota de tenis">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Etiquetas</label>
+        <input class="form-input" id="ef-tags" placeholder="Ej: protocolo, favorito (separadas por comas)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Foto del ejercicio</label>
+        <div id="ef-image-preview-wrap" style="display:none;align-items:center;gap:10px;margin-bottom:8px;">
+          <img id="ef-image-preview" style="width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--border);flex-shrink:0;">
+          <button type="button" class="btn btn-danger" style="padding:9px 12px;font-size:12.5px;" onclick="clearExerciseImage()">Quitar foto</button>
+        </div>
+        <input type="file" accept="image/*" id="ef-image-file" style="display:none;" onchange="handleExerciseImageFile(this)">
+        <button type="button" class="btn btn-secondary btn-block" onclick="document.getElementById('ef-image-file').click()">📷 Subir / hacer foto</button>
+        <input type="hidden" id="ef-image">
+        <div class="form-hint">La foto se guarda en el dispositivo (se comprime automáticamente). También puedes pegar una URL de imagen en vez de subir una foto:</div>
+        <input class="form-input" id="ef-image-url" placeholder="https://..." style="margin-top:8px;" oninput="document.getElementById('ef-image').value=this.value.trim(); updateExImagePreview(this.value.trim());">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" style="flex:0 0 auto;" id="ef-delete-btn" onclick="deleteCurrentExercise()">🗑️</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveExerciseEditor()">Guardar ejercicio</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: PROGRAMAR EJERCICIO A FECHA ============ -->
+<div class="modal-overlay" id="modal-schedule">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">Programar</div>
+      <button class="modal-close" onclick="closeModal('modal-schedule')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Ejercicio</label>
+        <div id="sched-exname" style="font-size:15px;font-weight:700;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input class="form-input" type="date" id="sched-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hora (opcional, para ordenar el día)</label>
+        <input class="form-input" type="time" id="sched-time">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nº de series</label>
+        <input class="form-input" type="number" min="1" id="sched-sets" placeholder="Ej: 3">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas (reps/RPE/descanso/carga para esta sesión)</label>
+        <input class="form-input" id="sched-notes" placeholder="Ej: 12 reps @ peso corporal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Repetir</label>
+        <div class="toggle-row">
+          <div class="toggle-pill" data-rep="none" onclick="setSchedRepeat('none')">Solo este día</div>
+          <div class="toggle-pill" data-rep="weekly4" onclick="setSchedRepeat('weekly4')">Cada semana x4</div>
+          <div class="toggle-pill" data-rep="weekly8" onclick="setSchedRepeat('weekly8')">Cada semana x8</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="confirmSchedule()">Añadir al calendario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: TAREA (puntual o recurrente) ============ -->
+<div class="modal-overlay" id="modal-taskform">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title" id="task-form-title">Nueva tarea</div>
+      <button class="modal-close" onclick="closeModal('modal-taskform')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="task-id">
+      <div class="form-group">
+        <label class="form-label">Título</label>
+        <input class="form-input" id="task-title" placeholder="Ej: Sacar la basura, pagar el gimnasio...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas (opcional)</label>
+        <input class="form-input" id="task-notes" placeholder="Detalles adicionales">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hora (opcional, para ordenar el día)</label>
+        <input class="form-input" type="time" id="task-time">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div class="toggle-row" id="task-kind-row">
+          <div class="toggle-pill" data-kind="puntual" onclick="setTaskKind('puntual')">📌 Puntual</div>
+          <div class="toggle-pill" data-kind="recurrente" onclick="setTaskKind('recurrente')">🔁 Recurrente</div>
+        </div>
+      </div>
+
+      <div id="task-puntual-fields">
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-input" type="date" id="task-date">
+        </div>
+      </div>
+
+      <div id="task-recurrente-fields" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Frecuencia</label>
+          <div class="toggle-row" id="task-freq-row">
+            <div class="toggle-pill" data-freq="diario" onclick="setTaskFreq('diario')">Diario</div>
+            <div class="toggle-pill" data-freq="semanal" onclick="setTaskFreq('semanal')">Semanal</div>
+            <div class="toggle-pill" data-freq="mensual" onclick="setTaskFreq('mensual')">Mensual</div>
+            <div class="toggle-pill" data-freq="anual" onclick="setTaskFreq('anual')">Anual</div>
+          </div>
+        </div>
+
+        <div id="task-freq-diario" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Cada cuántos días</label>
+            <input class="form-input" type="number" min="1" id="task-every-diario" placeholder="1 = todos los días" value="1">
+          </div>
+        </div>
+
+        <div id="task-freq-semanal" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Días de la semana</label>
+            <div class="toggle-row" id="task-weekdays-row"></div>
+          </div>
+        </div>
+
+        <div id="task-freq-mensual" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Día del mes</label>
+            <input class="form-input" type="number" min="1" max="31" id="task-monthday" placeholder="Ej: 1, 15, 28">
+          </div>
+        </div>
+
+        <div id="task-freq-anual" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Día y mes</label>
+            <div style="display:flex;gap:8px;">
+              <input class="form-input" type="number" min="1" max="31" id="task-annual-day" placeholder="Día" style="flex:1;">
+              <select class="form-input" id="task-annual-month" style="flex:1;">
+                <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+                <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+                <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+                <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Empieza el (opcional, por defecto hoy)</label>
+          <input class="form-input" type="date" id="task-start-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Termina el (opcional, en blanco = sin fin)</label>
+          <input class="form-input" type="date" id="task-end-date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" style="flex:0 0 auto;" id="task-delete-btn" onclick="deleteCurrentTask()">🗑️</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveTaskForm()">Guardar tarea</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: DETALLE / ASIGNAR PLAN ============ -->
+<div class="modal-overlay" id="modal-plandetail">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title" id="plan-title">Programa</div>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Editar programa" onclick="openEditPlanModal()">✏️</button>
+        <button class="icon-btn" title="Eliminar programa" onclick="deleteCurrentPlan()">🗑️</button>
+        <button class="modal-close" onclick="closeModal('modal-plandetail')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:12px;" id="plan-desc"></p>
+      <div id="plan-days-detail"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="openAssignPlanModal()">📅 Programar este plan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: EDITAR PROGRAMA ============ -->
+<div class="modal-overlay" id="modal-editplan">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">Editar programa</div>
+      <button class="modal-close" onclick="closeModal('modal-editplan')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre del programa</label>
+        <input class="form-input" id="ep-name" placeholder="Ej: Fase 1 · Base y adaptación">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Semanas (opcional, ej: 1-4)</label>
+        <input class="form-input" id="ep-weeks" placeholder="Ej: 1-4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-textarea" id="ep-desc" placeholder="Objetivo de este programa..."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="saveEditPlan()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: ASIGNAR PLAN A FECHA INICIO ============ -->
+<div class="modal-overlay" id="modal-assignplan">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">Programar plan</div>
+      <button class="modal-close" onclick="closeModal('modal-assignplan')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Fecha de inicio (lunes recomendado)</label>
+        <input class="form-input" type="date" id="assign-start-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número de semanas por ciclo</label>
+        <input class="form-input" type="number" id="assign-weeks" value="4" min="1" max="52">
+      </div>
+      <div class="form-hint">Se rellenará tu calendario repitiendo la semana tipo de este programa. Podrás editar cada día después.</div>
+      <div class="form-group" style="margin-top:14px;">
+        <label class="form-label">🔁 ¿Programa cíclico?</label>
+        <div class="toggle-row">
+          <div class="toggle-pill" id="assign-cyclic-no" onclick="setAssignCyclic(false)">No, solo una vez</div>
+          <div class="toggle-pill" id="assign-cyclic-yes" onclick="setAssignCyclic(true)">Sí, repetir al terminar</div>
+        </div>
+      </div>
+      <div class="form-group" id="assign-cyclelimit-wrap" style="display:none;">
+        <label class="form-label">Nº de ciclos a repetir (déjalo vacío para repetir indefinidamente)</label>
+        <input class="form-input" type="number" min="1" id="assign-cyclelimit" placeholder="Vacío = indefinido">
+        <div class="form-hint">Cada vez que se acerque el final del ciclo actual, la app añadirá automáticamente el siguiente al calendario, sin que tengas que volver a programarlo.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="confirmAssignPlan()">Programar en el calendario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: NUEVO PLAN PROPIO ============ -->
+<div class="modal-overlay" id="modal-newplan">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">Nuevo programa</div>
+      <button class="modal-close" onclick="closeModal('modal-newplan')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre del programa</label>
+        <input class="form-input" id="np-name" placeholder="Ej: Mantenimiento post-12 semanas">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-textarea" id="np-desc" placeholder="Objetivo de este programa..."></textarea>
+      </div>
+      <div class="form-hint">Tras crearlo, añade ejercicios a sus días desde el detalle del programa.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="saveNewPlan()">Crear programa</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: AÑADIR EJERCICIO A DÍA DE PLAN ============ -->
+<div class="modal-overlay" id="modal-planday-add">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title" id="pda-title">Añadir ejercicio</div>
+      <button class="modal-close" onclick="closeModal('modal-planday-add')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="lib-search" style="margin:0 0 10px;">
+        <input class="form-input" id="pda-search" placeholder="Buscar en la biblioteca...">
+      </div>
+      <div id="pda-list" style="max-height:300px;overflow-y:auto;"></div>
+      <div class="form-group" style="margin-top:10px;">
+        <label class="form-label">Nº de series</label>
+        <input class="form-input" type="number" min="1" id="pda-sets" placeholder="Ej: 3">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas para este día (reps, RPE, descanso, carga...)</label>
+        <input class="form-input" id="pda-notes" placeholder="Ej: 6-10 reps · RPE 5-6 · Descanso 2 min">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="confirmAddToPlanDay()">Añadir al día</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: HISTORIAL COMPLETO DE SEGUIMIENTO ============ -->
+<div class="modal-overlay" id="modal-fullhistory">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">📊 Historial de seguimiento</div>
+      <button class="modal-close" onclick="closeModal('modal-fullhistory')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="lib-search" style="margin:0 0 10px;">
+        <input class="form-input" id="fh-search" placeholder="Buscar ejercicio..." oninput="renderFullHistoryList()">
+      </div>
+      <div id="fh-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: SELECCIONAR VARIANTES ============ -->
+<div class="modal-overlay" id="modal-variant-picker">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">Elegir variantes</div>
+      <button class="modal-close" onclick="closeModal('modal-variant-picker')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="lib-search" style="margin:0 0 10px;">
+        <input class="form-input" id="vp-search" placeholder="Buscar en la biblioteca...">
+      </div>
+      <div id="vp-list" style="max-height:340px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="closeModal('modal-variant-picker')">Listo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: LOG DE DOLOR / LESIONES ============ -->
+<div class="modal-overlay" id="modal-painlog">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">Registro de lesiones</div>
+      <button class="modal-close" onclick="closeModal('modal-painlog')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-hint" style="margin-bottom:10px;">Escala 0 (sin dolor) - 10 (dolor insoportable)</div>
+      <div class="pain-log-row" id="painlog-inputs"></div>
+      <div class="form-group" style="margin-top:14px;">
+        <label class="form-label">Notas del día</label>
+        <textarea class="form-textarea" id="painlog-notes" placeholder="Cómo te sentiste, qué dolió, qué técnica ajustaste..."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="savePainLog()">Guardar registro</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: GESTIÓN DE CATEGORÍAS ============ -->
+<div class="modal-overlay" id="modal-categories">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">Categorías</div>
+      <button class="modal-close" onclick="closeModal('modal-categories')">✕</button>
+    </div>
+    <div class="modal-body" id="cat-manager-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary btn-block" onclick="addNewCategory()">+ Nueva categoría</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   BAÚL DEL MOVIMIENTO 2.0
+   ========================================================================= */
+
+// Lista de zonas corporales, reutilizada como filtro (facet) en varias categorías
+// y como el propio primer nivel de subcategoría en Rehabilitación.
+const ZONES = ['Cuello','Hombro','Escápula','Codo','Muñeca','Mano','Columna','Tórax','Core','Pelvis','Cadera','Rodilla','Tobillo','Pie','Global'];
+
+// Árbol de subcategorías: cada nodo es {id, name, children?:[nodo,...]}
+// subcatTree(...) es solo azúcar para no repetir children:[] en los nodos hoja.
+function sc(id, name, children){ return children ? {id, name, children} : {id, name}; }
+
+const DEFAULT_CATEGORIES = [
+  {id:'fuerza', name:'Fuerza', icon:'🏋️', color:'coral', subcats:[
+    sc('fuerza_muscular','Fuerza muscular'), sc('fuerza_profunda','Fuerza profunda'), sc('isometricos','Isométricos'),
+    sc('excentricos','Excéntricos'), sc('potencia','Potencia'), sc('core','Core'), sc('agarre','Agarre'),
+  ], facets:[{id:'zona', name:'Zona', options: ZONES}]},
+
+  {id:'movimiento', name:'Movimiento', icon:'🦴', color:'teal', subcats:[
+    sc('movilidad','Movilidad'), sc('cars','CARS'),
+  ], facets:[{id:'zona', name:'Zona', options: ZONES}]},
+
+  {id:'tejidos', name:'Tejidos / Estructuras', icon:'🕸️', color:'amber', subcats:[
+    sc('fascia','Fascia'), sc('tendones','Tendones'), sc('ligamentos','Ligamentos'),
+    sc('musculo','Músculo'), sc('articulaciones','Articulaciones'), sc('nervios','Nervios'),
+  ], facets:[{id:'zona', name:'Zona', options: ZONES}]},
+
+  {id:'rehab', name:'Rehabilitación', icon:'🩹', color:'pink', subcats: ZONES.map(z=>sc('rz_'+z.toLowerCase().replace(/[^a-záéíóúñ0-9]/gi,''), z)),
+    facets:[{id:'tipo', name:'Tipo rehabilitación', options:['Articular','Muscular','Tendinosa','Ligamentaria','Ósea','Neurológica / nerviosa']}]},
+
+  {id:'cardio', name:'Cardio', icon:'🫀', color:'green', subcats:[
+    sc('zona2','Zona 2'), sc('vo2max','VO₂max'), sc('umbral','Umbral'), sc('resistencia','Resistencia'),
+  ]},
+
+  {id:'skills', name:'Skills', icon:'🎯', color:'purple', subcats:[
+    sc('crossfit','CrossFit'),
+    sc('halterofilia','Halterofilia'),
+    sc('yoga','Yoga', [sc('hatha','Hatha'), sc('vinyasa','Vinyasa'), sc('ashtanga','Ashtanga'), sc('iyengar','Iyengar'), sc('yin','Yin'), sc('restorative','Restorative'), sc('kundalini','Kundalini')]),
+    sc('meditacion','Meditación', [sc('mindfulness','Mindfulness'), sc('concentracion','Concentración'), sc('visualizacion','Visualización'), sc('compasion','Compasión / emociones'), sc('relajacion_sueno','Relajación / sueño'), sc('movimiento_med','Movimiento')]),
+    sc('handstand','Handstand', [
+      sc('forma','Forma', [sc('straight','Straight / Line'), sc('straddle','Straddle'), sc('split','Split'), sc('tuck','Tuck'), sc('pike','Pike'), sc('stag','Stag'), sc('scorpion','Scorpion'), sc('lotus','Lotus')]),
+      sc('entrada','Entrada', [sc('kickup','Kick-up'), sc('jump','Jump'), sc('press','Press'), sc('cartwheel_in','Cartwheel'), sc('macaco','Macaco / entrada acrobática'), sc('roll_in','Roll / entrada desde suelo')]),
+      sc('salida','Salida', [sc('cartwheel_out','Cartwheel'), sc('bailout','Bailout'), sc('roll_out','Roll'), sc('pirouette','Pirouette'), sc('stepdown','Step-down'), sc('jumpdown','Jump-down')]),
+      sc('apoyo','Apoyo', [sc('freestanding','Freestanding'), sc('pared','Pared'), sc('unamano','Una mano'), sc('parallettes','Paralelas / Parallettes'), sc('canes','Canes'), sc('anillas','Anillas')]),
+    ]),
+    sc('natacion','Natación', [sc('crol','Crol'), sc('braza','Braza'), sc('mariposa','Mariposa'), sc('espalda','Espalda')]),
+  ], facets:[{id:'objetivo_med', name:'Objetivo (meditación)', options:['Activar','Relajar','Concentrar','Reducir estrés','Mejorar ánimo','Dormir','Recuperar']}]},
+
+  {id:'respiracion', name:'Respiración', icon:'🌬️', color:'blue', subcats:[
+    sc('entrenamiento_resp','Entrenamiento respiratorio', [sc('capacidad_pulmonar','Capacidad pulmonar'), sc('fuerza_resp','Fuerza respiratoria'), sc('resistencia_resp','Resistencia respiratoria'), sc('powerbreathe','PowerBreathe')]),
+    sc('pranayama','Pranayama', [sc('ujjayi','Ujjayi'), sc('kapalabhati','Kapalabathi'), sc('nadi_sodhana','Nadi Sodhana'), sc('cuadrada','Respiración Cuadrada')]),
+    sc('tecnicas_resp','Técnicas de respiración', [sc('activacion','Activación'), sc('relajacion_resp','Relajación'), sc('regulacion_estres','Regulación del estrés'), sc('concentracion_resp','Concentración'), sc('sueno','Sueño'), sc('co2','Mejorar tolerancia al CO₂'), sc('capacidad_resp','Mejorar capacidad respiratoria')]),
+  ], facets:[{id:'nivel', name:'Nivel', options:['Principiante','Intermedio','Avanzado']}]},
+
+  {id:'cerebro', name:'Cerebro', icon:'🧠', color:'gray', subcats:[
+    sc('memoria','Memoria'), sc('atencion','Atención'), sc('percepcion','Percepción'), sc('reaccion','Reacción'),
+    sc('coordinacion','Coordinación'), sc('lateralidad','Lateralidad'), sc('novedad','Novedad / aprendizaje'), sc('integracion','Integración'),
+  ]},
+
+  {id:'rostro', name:'Rostro', icon:'💆', color:'pink', subcats:[
+    sc('facial_manual','Manual (flacidez)'), sc('gua_sha','Gua Sha'), sc('ventosas_facial','Ventosas'), sc('apertura','Apertura de canales'), sc('capilar','Cabello / cuero cabelludo'),
+  ]},
+];
+
+/* ---- Helpers para el árbol de subcategorías ---- */
+function findSubcatNode(nodes, path, depth){
+  depth = depth||0;
+  if(!nodes || !path || depth>=path.length) return null;
+  const node = nodes.find(n=>n.id===path[depth]);
+  if(!node) return null;
+  if(depth===path.length-1) return node;
+  return findSubcatNode(node.children||[], path, depth+1);
+}
+function subcatPathLabel(cat, path){
+  if(!cat || !path || !path.length) return '';
+  const names = [];
+  let nodes = cat.subcats||[];
+  for(const id of path){
+    const node = nodes.find(n=>n.id===id);
+    if(!node) break;
+    names.push(node.name);
+    nodes = node.children||[];
+  }
+  return names.join(' › ');
+}
+
+const CAT_COLOR = {
+  green:['#1D9E75','#E1F5EE'], blue:['#378ADD','#E6F1FB'], purple:['#7F77DD','#EEEDFE'],
+  amber:['#BA7517','#FAEEDA'], coral:['#D85A30','#FAECE7'], pink:['#D4537E','#FBEAF0'],
+  teal:['#2A9D9D','#E3F5F5'], gray:['#888780','#F1EFE8']
+};
+
+function catInfo(id){
+  return state.categories.find(c=>c.id===id) || {id, name:id, icon:'⚪', color:'gray', subcats:[]};
+}
+
+const INJURY_KEYS = [
+  {id:'codo', label:'Codo'},
+  {id:'hombro', label:'Hombro'},
+  {id:'tunel', label:'Túnel C.'},
+  {id:'rodilla', label:'Rodilla'},
+];
+
+const DEFAULT_EXERCISES = [
+];
+
+const DEFAULT_PROGRAMS = [
+
+];
+
+/* =========================================================================
+   ESTADO Y PERSISTENCIA
+   ========================================================================= */
+const STORAGE_KEY = 'bm2_state_v1';
+
+function freshState(){
+  return {
+    categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),
+    exercises: JSON.parse(JSON.stringify(DEFAULT_EXERCISES)),
+    programs: JSON.parse(JSON.stringify(DEFAULT_PROGRAMS)),
+    customPlans: [],
+    schedule: {},      // { 'YYYY-MM-DD': [ {id, exId, notes, sets, done} ] }
+    painLogs: {},       // { 'YYYY-MM-DD': { codo, hombro, tunel, rodilla, notes } }
+    tasks: [],          // [{id, title, notes, time, kind:'puntual'|'recurrente', date, freq, every, weekdays, monthDay, annualDay, annualMonth, startDate, endDate, archived}]
+    taskDone: {},        // { 'YYYY-MM-DD': { taskId: true } } — estado "hecho" de cada ocurrencia de tarea
+    logs: [],           // [{id, exId, date, sets:[{weight,reps}], comment, scheduleItemId, createdAt}]
+    dropbox: { appKey:'', redirectUri:'', accessToken:'', refreshToken:'', expiresAt:0, connected:false, lastSync:0, codeVerifier:'' },
+    // IDs de ejercicios/planes/categorías DE FÁBRICA que el usuario ha borrado a propósito.
+    // mergeDefaults() los respeta y no los vuelve a añadir (si no, un borrado "resucitaría"
+    // en el siguiente refresco o al importar un backup).
+    deletedDefaults: { exercises: [], programs: [], categories: [] },
+    updatedAt: Date.now(),
+  };
+}
+
+let state = loadLocal() || freshState();
+migrateCategoriesV2();
+// Merge in any newly-added default exercises/programs (so app updates add content without wiping user data)
+mergeDefaults();
+// Compatibilidad hacia atrás: usuarios con datos guardados de antes de que existieran las Tareas.
+if(!state.tasks) state.tasks = [];
+if(!state.taskDone) state.taskDone = {};
+
+/* =========================================================================
+   MIGRACIÓN A TAXONOMÍA JERÁRQUICA V2 (categorías antiguas -> nuevas)
+   Se ejecuta una sola vez (marca state.catv2 = true) y reasigna cada
+   ejercicio existente a la nueva categoría/ruta más parecida. Si no hay
+   una correspondencia clara, el ejercicio queda en la categoría nueva
+   pero SIN subcategoría elegida (path:[]), para que se revise a mano.
+   ========================================================================= */
+function migrateCategoriesV2(){
+  if(state.catv2) return;
+  const OLD_TO_NEW = {
+    yoga:      { c:'skills', path:['yoga'] },
+    pranayama: { c:'respiracion', path:['pranayama'] },
+    fuerza:    { c:'fuerza', path:[] },
+    skills:    { c:'skills', path:['crossfit'] },
+    piscina:   { c:'skills', path:['natacion'] },
+    fascia:    { c:'tejidos', path:['fascia'] },
+    casa:      { c:'fuerza', path:[] },
+    rehab:     { c:'rehab', path:[] },
+    cars:      { c:'movimiento', path:['cars'] },
+    zona2:     { c:'cardio', path:['zona2'] },
+    locomotor: { c:'cardio', path:['resistencia'] },
+  };
+  // Ajustes finos por subcategoría antigua concreta
+  const OLD_SUBCAT_HINTS = {
+    'fuerza|Core': { c:'fuerza', path:['core'] },
+    'casa|Piernas / Core': { c:'fuerza', path:['core'] },
+    'skills|Handstand / Pino': { c:'skills', path:['handstand'] },
+    'skills|Snatch': { c:'skills', path:['halterofilia'] },
+    'skills|Clean': { c:'skills', path:['halterofilia'] },
+    'rehab|CARs': { c:'movimiento', path:['cars'] },
+    'rehab|Codo / Epicondilitis': { c:'rehab', path:['rz_codo'] },
+    'rehab|Hombro / SOT': { c:'rehab', path:['rz_hombro'] },
+    'rehab|Túnel Carpiano': { c:'rehab', path:['rz_muñeca'] },
+    'rehab|Rodilla': { c:'rehab', path:['rz_rodilla'] },
+  };
+  const zonesSet = new Set(ZONES);
+  let migratedCount = 0;
+  (state.exercises||[]).forEach(ex=>{
+    // Respiración: antes era texto libre; ahora es una lista con checks, como Ejecución/Tips.
+    if(typeof ex.breathing === 'string'){
+      ex.breathing = ex.breathing.split('\n').map(s=>s.trim()).filter(Boolean);
+    }
+    if(!ex.cats) return;
+    const newCats = [];
+    const seen = new Set();
+    ex.cats.forEach(c=>{
+      // Si el objeto ya tiene "path" (aunque esté vacío) es formato nuevo: no se remapea.
+      if('path' in c){
+        newCats.push({c:c.c, path: c.path||[], facets: c.facets||{}});
+        return;
+      }
+      let mapping = OLD_SUBCAT_HINTS[c.c+'|'+c.s] || OLD_TO_NEW[c.c];
+      let facets = {};
+      // La categoría antigua "cars" tenía la zona como subcat directa: se traslada al facet "zona" de Movimiento
+      if(c.c==='cars' && c.s && zonesSet.has(c.s)) facets.zona = c.s;
+      if(!mapping){
+        // Categoría ya es una de las nuevas (o desconocida): se deja igual, solo se normaliza path
+        newCats.push({c:c.c, path: c.path||[], facets: c.facets||{}});
+        return;
+      }
+      migratedCount++;
+      const key = mapping.c+'>'+mapping.path.join('/');
+      if(seen.has(key)) return;
+      seen.add(key);
+      newCats.push({c:mapping.c, path:mapping.path.slice(), facets});
+    });
+    if(newCats.length) ex.cats = newCats;
+  });
+  state.categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+  state.catv2 = true;
+  persist();
+  if(migratedCount) console.log('[Strata] Migradas '+migratedCount+' asignaciones de categoría a la nueva taxonomía. Revisa la biblioteca: los ejercicios sin subcategoría clara han quedado sin ruta y conviene re-etiquetarlos.');
+}
+
+function mergeDefaults(){
+  if(!state.deletedDefaults) state.deletedDefaults = { exercises: [], programs: [], categories: [] };
+  if(!state.deletedDefaults.exercises) state.deletedDefaults.exercises = [];
+  if(!state.deletedDefaults.programs) state.deletedDefaults.programs = [];
+  if(!state.deletedDefaults.categories) state.deletedDefaults.categories = [];
+  const delEx = new Set(state.deletedDefaults.exercises);
+  const delPlan = new Set(state.deletedDefaults.programs);
+  const delCat = new Set(state.deletedDefaults.categories);
+
+  const haveEx = new Set(state.exercises.map(e=>e.id));
+  DEFAULT_EXERCISES.forEach(d=>{ if(!haveEx.has(d.id) && !delEx.has(d.id)) state.exercises.push(JSON.parse(JSON.stringify(d))); });
+  // Los programas de fábrica (Fase 1/2/3) se comportan igual que los ejercicios de fábrica:
+  // si faltan (primera vez, o una versión nueva de la app añade un plan nuevo) se añaden,
+  // pero si YA EXISTEN nunca se sobreescriben, y si el usuario los borró a propósito
+  // (id en deletedDefaults.programs) tampoco se vuelven a añadir. Antes esta línea hacía
+  // `state.programs = JSON.parse(JSON.stringify(DEFAULT_PROGRAMS))` en cada carga, lo que
+  // borraba silenciosamente cualquier edición tuya sobre Fase 1/2/3 (bloques renombrados,
+  // ejercicios añadidos/quitados, nombre/semanas/descripción editados) y también hacía
+  // "resucitar" cualquier plan que hubieras borrado. Con este cambio se respeta todo eso.
+  if(!state.programs) state.programs = [];
+  const havePlan = new Set(state.programs.map(p=>p.id));
+  DEFAULT_PROGRAMS.forEach(d=>{ if(!havePlan.has(d.id) && !delPlan.has(d.id)) state.programs.push(JSON.parse(JSON.stringify(d))); });
+  const haveCat = new Set(state.categories.map(c=>c.id));
+  DEFAULT_CATEGORIES.forEach(d=>{ if(!haveCat.has(d.id) && !delCat.has(d.id)) state.categories.push(JSON.parse(JSON.stringify(d))); });
+  if(!state.customPlans) state.customPlans = [];
+  if(!state.schedule) state.schedule = {};
+  if(!state.painLogs) state.painLogs = {};
+  if(!state.assignments) state.assignments = [];
+  if(!state.dayGroupOrder) state.dayGroupOrder = {};
+  if(!state.logs) state.logs = [];
+  // Migración: asignaciones antiguas sin campos de ciclo -> no cíclicas por defecto
+  state.assignments.forEach(a=>{
+    if(a.cyclic===undefined) a.cyclic = false;
+    if(a.cyclesGenerated===undefined) a.cyclesGenerated = 1;
+    if(a.cycleLimit===undefined) a.cycleLimit = null;
+  });
+  if(!state.dropbox) state.dropbox = { appKey:'', redirectUri:'', accessToken:'', refreshToken:'', expiresAt:0, connected:false, lastSync:0, codeVerifier:'' };
+  // Migración: planes (de fábrica Y propios) antiguos con estructura plana {items:[]} pasan a {blocks:[{label,items}]}
+  [...state.programs, ...state.customPlans].forEach(plan=>{
+    Object.keys(plan.days||{}).forEach(dName=>{
+      const d = plan.days[dName];
+      if(d && !d.blocks && d.items){ d.blocks = [{label:'Ejercicios', items: d.items}]; delete d.items; }
+      if(d && !d.blocks){ d.blocks = []; }
+    });
+  });
+}
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+
+let saveTimer = null;
+function saveLocal(){
+  state.updatedAt = Date.now();
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.error('Storage error', e); }
+}
+
+function persist(){
+  saveLocal();
+  scheduleDropboxSync();
+}
+
+/* =========================================================================
+   HELPERS
+   ========================================================================= */
+function uid(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function todayStr(){ return dateToStr(new Date()); }
+function dateToStr(d){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function strToDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+const WEEKDAY_ES = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+function daysInMonthOf(year, monthIdx0){ return new Date(year, monthIdx0+1, 0).getDate(); }
+function getExercise(id){ return state.exercises.find(e=>e.id===id); }
+function findAllPlans(){ return [...state.programs, ...state.customPlans]; }
+
+// Muestra en negrita el número de series de un ítem programado (plan o calendario).
+// Si el ítem tiene un campo "sets" explícito, se antepone como "N series" en negrita.
+// Si no, se intenta resaltar en negrita el primer tramo de las notas (antes del primer "·"),
+// que por convención en esta app es donde va "3 series × 6-10 reps". No se inventa nada:
+// si no hay notas ni sets, no se muestra nada.
+function formatItemNotes(item){
+  const notes = (item && item.notes) || '';
+  const sets = item && item.sets;
+  const timePrefix = (item && item.time) ? `🕐 ${item.time}` : '';
+  let rest = '';
+  if(sets){
+    rest = `<b>${sets} serie${sets==1?'':'s'}</b>` + (notes ? ' · '+notes : '');
+  } else if(notes){
+    const parts = notes.split('·');
+    rest = parts.length>1 ? `<b>${parts[0].trim()}</b> · ${parts.slice(1).join('·').trim()}` : `<b>${notes.trim()}</b>`;
+  }
+  if(timePrefix && rest) return `${timePrefix} · ${rest}`;
+  return timePrefix || rest;
+}
+
+/* =========================================================================
+   SEGUIMIENTO / HISTORIAL DE EJERCICIOS
+   ========================================================================= */
+function addExerciseLog(exId, date, setsArr, comment, scheduleItemId){
+  const entry = { id: uid('log'), exId, date, sets: setsArr||[], comment: comment||'', scheduleItemId: scheduleItemId||null, createdAt: Date.now() };
+  state.logs.push(entry);
+  persist();
+  return entry;
+}
+function getExerciseLogs(exId){
+  return state.logs.filter(l=>l.exId===exId).sort((a,b)=>b.createdAt-a.createdAt);
+}
+function getLastNLogs(exId, n){
+  return getExerciseLogs(exId).slice(0, n||3);
+}
+function deleteExerciseLog(logId){
+  if(!confirm('¿Eliminar este registro del historial?')) return;
+  state.logs = state.logs.filter(l=>l.id!==logId);
+  persist();
+  renderExdTabs();
+}
+function fmtSetsSummary(setsArr){
+  if(!setsArr || !setsArr.length) return '—';
+  return setsArr.map(s=>{
+    const w = (s.weight!==undefined && s.weight!=='') ? s.weight+'kg' : '';
+    const r = (s.reps!==undefined && s.reps!=='') ? s.reps+'r' : '';
+    return [w,r].filter(Boolean).join('×') || '—';
+  }).join(' · ');
+}
+
+// Devuelve en qué programas/planes (y qué días de cada uno) aparece un ejercicio dado.
+// Resultado: [{plan, days:['Lunes','Jueves',...]}, ...]
+function findProgramsWithExercise(exId){
+  const results = [];
+  findAllPlans().forEach(plan=>{
+    const days = [];
+    Object.keys(plan.days||{}).forEach(dayName=>{
+      const day = plan.days[dayName];
+      (day.blocks||[]).forEach(blk=>{
+        (blk.items||[]).forEach(it=>{
+          if(it.exId===exId && !days.includes(dayName)) days.push(dayName);
+        });
+      });
+    });
+    if(days.length) results.push({plan, days});
+  });
+  return results;
+}
+function findPlan(id){ return findAllPlans().find(p=>p.id===id); }
+
+/* =========================================================================
+   LOTES DE PROGRAMACIÓN (assignments)
+   Cada vez que "Programar plan" se ejecuta, se crea un lote (assignId) que
+   agrupa todos los ejercicios que esa acción concreta añadió al calendario,
+   para poder deshacerla entera sin borrar día a día.
+   ========================================================================= */
+function getAssignmentBatches(){
+  // Recalcula recuentos reales y descarta lotes que ya se quedaron sin ejercicios
+  // (por ejemplo, si el usuario los fue borrando uno a uno con la ✕).
+  state.assignments = (state.assignments||[]).filter(a=>{
+    let count=0, minD=null, maxD=null;
+    Object.keys(state.schedule).forEach(ds=>{
+      (state.schedule[ds]||[]).forEach(it=>{
+        if(it.assignId===a.id){ count++; if(!minD||ds<minD) minD=ds; if(!maxD||ds>maxD) maxD=ds; }
+      });
+    });
+    if(count===0) return false;
+    a.startDate=minD; a.endDate=maxD; a._count=count;
+    return true;
+  });
+
+  const batches = state.assignments.map(a=>({
+    id:a.id, planName:a.planName, startDate:a.startDate, endDate:a.endDate,
+    weeks:a.weeks, count:a._count, legacy:false,
+    cyclic:!!a.cyclic, cycleLimit:a.cycleLimit||null, cyclesGenerated:a.cyclesGenerated||1
+  }));
+
+  // Compatibilidad: ejercicios programados ANTES de esta actualización no tienen
+  // assignId, solo fromPlan. Se agrupan por plan de origen para poder borrarlos también en bloque.
+  const legacyGroups = {};
+  Object.keys(state.schedule).forEach(ds=>{
+    (state.schedule[ds]||[]).forEach(it=>{
+      if(it.fromPlan && !it.assignId){
+        if(!legacyGroups[it.fromPlan]) legacyGroups[it.fromPlan] = {planId:it.fromPlan, count:0, minD:null, maxD:null};
+        const g = legacyGroups[it.fromPlan];
+        g.count++;
+        if(!g.minD||ds<g.minD) g.minD=ds;
+        if(!g.maxD||ds>g.maxD) g.maxD=ds;
+      }
+    });
+  });
+  Object.values(legacyGroups).forEach(g=>{
+    const plan = findPlan(g.planId);
+    batches.push({
+      id:'legacy_'+g.planId, legacyPlanId:g.planId, legacy:true,
+      planName:(plan?plan.name:'Programa eliminado')+' (programado antes de esta actualización)',
+      startDate:g.minD, endDate:g.maxD, weeks:null, count:g.count
+    });
+  });
+
+  return batches.sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||''));
+}
+
+function deleteAssignmentBatch(batchId, legacy, legacyPlanId){
+  if(!confirm('¿Eliminar esta programación del calendario?\n\nSe borrarán todos los ejercicios que añadió (en todos los días/semanas que ocupó). El programa en sí NO se borra, solo su programación en el calendario.')) return;
+  Object.keys(state.schedule).forEach(ds=>{
+    state.schedule[ds] = (state.schedule[ds]||[]).filter(it=>{
+      if(legacy) return !(it.fromPlan===legacyPlanId && !it.assignId);
+      return it.assignId !== batchId;
+    });
+    if(!state.schedule[ds].length) delete state.schedule[ds];
+  });
+  if(!legacy) state.assignments = (state.assignments||[]).filter(a=>a.id!==batchId);
+  persist();
+  renderPlanes();
+  if(currentScreen==='calendario') renderCalendario();
+  if(currentScreen==='dashboard') renderDashboard();
+  showToast('Programación eliminada del calendario ✓');
+}
+
+// Comprueba todas las asignaciones cíclicas y, si al ciclo actualmente relleno le quedan
+// 14 días o menos, genera automáticamente el/los siguiente(s) ciclo(s) en el calendario,
+// respetando el límite de ciclos si se definió uno. Así el usuario no tiene que volver
+// a programar manualmente un programa cíclico cuando termina.
+function maintainCyclicAssignments(){
+  if(!state.assignments || !state.assignments.length) return;
+  let dirty = false;
+  const today = new Date();
+  state.assignments.forEach(a=>{
+    if(!a.cyclic || !a.startMonday || !a.weeksPerCycle) return;
+    let safety = 0;
+    while(safety++ < 60){
+      if(a.cycleLimit && a.cyclesGenerated>=a.cycleLimit) break;
+      const nextMonday = strToDate(a.startMonday);
+      nextMonday.setDate(nextMonday.getDate() + a.cyclesGenerated*a.weeksPerCycle*7);
+      const threshold = new Date(nextMonday); threshold.setDate(threshold.getDate()-14);
+      if(today < threshold) break;
+      const plan = findPlan(a.planId);
+      if(!plan) break;
+      const {lastDs} = fillPlanCycle(plan, nextMonday, a.weeksPerCycle, a.id);
+      if(lastDs && (!a.endDate || lastDs>a.endDate)) a.endDate = lastDs;
+      a.cyclesGenerated++;
+      dirty = true;
+    }
+  });
+  if(dirty) persist();
+}
+
+// Activa/desactiva el modo cíclico de una programación ya existente, o cambia su límite de ciclos.
+function toggleAssignmentCyclic(assignId){
+  const a = (state.assignments||[]).find(x=>x.id===assignId);
+  if(!a) return;
+  if(!a.cyclic){
+    if(!a.startMonday || !a.weeksPerCycle){ showToast('Esta programación es anterior a la función cíclica: prográmala de nuevo para activarlo.'); return; }
+    const limitRaw = prompt('¿Cuántos ciclos quieres repetir? Déjalo vacío para repetir indefinidamente.', '');
+    if(limitRaw===null) return;
+    const limit = parseInt(limitRaw)||null;
+    a.cyclic = true;
+    a.cycleLimit = limit;
+    persist();
+    maintainCyclicAssignments();
+    renderPlanes();
+    showToast('Programa marcado como cíclico ✓');
+  } else {
+    if(!confirm('¿Desactivar la repetición cíclica de este programa? Los ciclos ya generados no se borran.')) return;
+    a.cyclic = false;
+    persist();
+    renderPlanes();
+    showToast('Programa cíclico desactivado');
+  }
+}
+
+function fmtDateShort(ds){
+  if(!ds) return '?';
+  return strToDate(ds).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+function openModal(id){ document.getElementById(id).classList.add('active'); }
+
+/* =========================================================================
+   NAV
+   ========================================================================= */
+let currentScreen = 'dashboard';
+function switchScreen(name){
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.screen===name));
+  document.getElementById('fab-btn').style.display = (name==='dashboard') ? 'none' : 'flex';
+  if(name==='dashboard') renderDashboard();
+  if(name==='biblioteca') renderBiblioteca();
+  if(name==='calendario') renderCalendario();
+  if(name==='planes') renderPlanes();
+  if(name==='tareas') renderTareas();
+  if(name==='ajustes') renderAjustes();
+}
+
+function fabAction(){
+  if(currentScreen==='biblioteca') openExerciseEditor(null);
+  else if(currentScreen==='planes') openNewPlanModal();
+  else if(currentScreen==='tareas') openTaskForm(null);
+  else if(currentScreen==='calendario') openScheduleModal(null);
+}
+
+/* =========================================================================
+   DASHBOARD
+   ========================================================================= */
+function renderDashboard(){
+  const now = new Date();
+  document.getElementById('dash-date').textContent = now.toLocaleDateString('es-ES',{weekday:'long', day:'numeric', month:'long'});
+
+  // active plan banner: most recently assigned plan that still has future/today items
+  const banner = document.getElementById('dash-plan-banner');
+  const activePlanId = findMostRecentAssignedPlan();
+  if(activePlanId){
+    const plan = findPlan(activePlanId);
+    banner.innerHTML = `<div class="plan-banner" onclick="openPlanDetail('${activePlanId}')" style="cursor:pointer;">
+      <div class="plan-banner-label">Programa activo</div>
+      <div class="plan-banner-title">${plan ? plan.name : 'Programa'}</div>
+      <div class="plan-banner-sub">Toca para ver el detalle del programa</div>
+    </div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+
+  // stats: week completion
+  const week = getWeekDates(now);
+  let totalWeek=0, doneWeek=0;
+  week.forEach(d=>{
+    const items = state.schedule[d]||[];
+    totalWeek += items.length;
+    doneWeek += items.filter(i=>i.done).length;
+  });
+  const pct = totalWeek ? Math.round(doneWeek/totalWeek*100) : 0;
+
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-num">${doneWeek}/${totalWeek}</div>
+      <div class="stat-label">Sesiones esta semana</div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">${state.exercises.length}</div>
+      <div class="stat-label">Ejercicios en biblioteca</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">${findAllPlans().length}</div>
+      <div class="stat-label">Programas disponibles</div>
+    </div>
+  `;
+
+  const todayItems = state.schedule[todayStr()] || [];
+  document.getElementById('dash-today-sub').textContent = todayItems.length
+    ? `${todayItems.filter(i=>i.done).length}/${todayItems.length} completados`
+    : 'Nada programado todavía';
+  document.getElementById('dash-today-list').innerHTML = renderPlannedList(todayStr(), todayItems);
+
+  // pain row
+  const lastPain = getLastPainLog();
+  document.getElementById('dash-pain-row').innerHTML = INJURY_KEYS.map(k=>{
+    const v = lastPain ? lastPain.values[k.id] : null;
+    return `<div class="pain-chip">
+      <div class="pl">${k.label}</div>
+      <div class="pain-num" style="color:${painColor(v)}">${v===null||v===undefined?'—':v}</div>
+    </div>`;
+  }).join('');
+
+  // quick cats
+  document.getElementById('dash-cats-row').innerHTML = state.categories.map(c=>
+    `<div class="chip" onclick="goToLibraryCat('${c.id}')">${c.icon} ${c.name}</div>`
+  ).join('');
+
+  updateSyncIndicator();
+}
+
+function painColor(v){
+  if(v===null||v===undefined) return 'var(--text3)';
+  if(v<=2) return 'var(--green)';
+  if(v<=5) return 'var(--amber)';
+  return 'var(--coral)';
+}
+
+function getLastPainLog(){
+  const dates = Object.keys(state.painLogs).sort();
+  if(!dates.length) return null;
+  const d = dates[dates.length-1];
+  return {date:d, values: state.painLogs[d]};
+}
+
+function getWeekDates(refDate){
+  const d = new Date(refDate);
+  const day = (d.getDay()+6)%7; // Monday=0
+  const monday = new Date(d); monday.setDate(d.getDate()-day);
+  const out=[];
+  for(let i=0;i<7;i++){ const dd=new Date(monday); dd.setDate(monday.getDate()+i); out.push(dateToStr(dd)); }
+  return out;
+}
+
+function goToLibraryCat(catId){
+  switchScreen('biblioteca');
+  libState.activeCats = new Set([catId]);
+  libState.activePath = [];
+  libState.activeFacets = {};
+  renderBiblioteca();
+}
+
+function findMostRecentAssignedPlan(){
+  // Devuelve el plan que corresponde a HOY, no simplemente "el último programado
+  // en el calendario" (ese cálculo antiguo hacía que un programa asignado muy en el
+  // futuro, ej. Fase 8 en semana del 14 dic, apareciese como "activo hoy" solo por
+  // ser la fecha más lejana del calendario).
+  const today = todayStr();
+  const assignments = state.assignments || [];
+
+  // 1) Asignación(es) cuyo rango de fechas cubre hoy. Si hay varias, la de inicio más reciente.
+  let candidates = assignments.filter(a=> a.startDate && a.endDate && a.startDate<=today && today<=a.endDate);
+  if(candidates.length){
+    candidates.sort((a,b)=> b.startDate.localeCompare(a.startDate));
+    return candidates[0].planId;
+  }
+
+  // 2) Ninguna cubre hoy exactamente (ej. hueco entre ciclos): la última que YA empezó.
+  let started = assignments.filter(a=> a.startDate && a.startDate<=today);
+  if(started.length){
+    started.sort((a,b)=> b.startDate.localeCompare(a.startDate));
+    return started[0].planId;
+  }
+
+  // 3) Si aún no ha empezado ninguna, la próxima programada (fecha de inicio más cercana).
+  let upcoming = assignments.filter(a=> a.startDate && a.startDate>today);
+  if(upcoming.length){
+    upcoming.sort((a,b)=> a.startDate.localeCompare(b.startDate));
+    return upcoming[0].planId;
+  }
+
+  // 4) Compatibilidad con programaciones antiguas sin assignId: mismo criterio (empezada > próxima).
+  let bestStarted=null, bestStartedDate=null, bestUpcoming=null, bestUpcomingDate=null;
+  Object.keys(state.schedule).forEach(date=>{
+    (state.schedule[date]||[]).forEach(item=>{
+      if(!item.fromPlan || item.assignId) return;
+      if(date<=today){
+        if(!bestStartedDate || date>bestStartedDate){ bestStartedDate=date; bestStarted=item.fromPlan; }
+      } else {
+        if(!bestUpcomingDate || date<bestUpcomingDate){ bestUpcomingDate=date; bestUpcoming=item.fromPlan; }
+      }
+    });
+  });
+  return bestStarted || bestUpcoming || null;
+}
+
+function renderPlannedList(dateStr, items){
+  if(!items || !items.length){
+    return `<div class="empty-state"><div class="e-icon">📭</div><div class="e-title">Nada programado</div><div class="e-sub">Añade ejercicios desde la Biblioteca o programa un plan completo.</div></div>`;
+  }
+  return `<div class="card"><div style="padding:4px 14px;">` + renderPlannedListInline(dateStr, items) + `</div></div>`;
+}
+
+function toggleScheduleItem(dateStr, itemId){
+  const items = state.schedule[dateStr]||[];
+  const it = items.find(i=>i.id===itemId);
+  if(it){ it.done = !it.done; persist(); renderCurrentScreenSoft(); }
+}
+function removeScheduleItem(dateStr, itemId){
+  state.schedule[dateStr] = (state.schedule[dateStr]||[]).filter(i=>i.id!==itemId);
+  if(!state.schedule[dateStr].length) delete state.schedule[dateStr];
+  persist(); renderCurrentScreenSoft();
+  showToast('Eliminado del calendario');
+}
+function renderCurrentScreenSoft(){
+  if(currentScreen==='dashboard') renderDashboard();
+  if(currentScreen==='calendario') renderCalDayPanel(calSelectedDate);
+}
+
+/* =========================================================================
+   BIBLIOTECA
+   ========================================================================= */
+let libState = { activeCats: new Set(), activePath: [], activeFacets: {}, search: '' };
+
+function renderBiblioteca(){
+  document.getElementById('lib-cats-row').innerHTML = state.categories.map(c=>{
+    const active = libState.activeCats.has(c.id);
+    return `<div class="chip ${active?'active':''}" onclick="toggleLibCat('${c.id}')">${c.icon} ${c.name}</div>`;
+  }).join('');
+
+  // subcats en árbol + facetas: solo cuando hay exactamente una categoría activa
+  let subcatRow = document.getElementById('lib-subcats-row');
+  if(libState.activeCats.size===1){
+    const cat = catInfo([...libState.activeCats][0]);
+    subcatRow.style.display='';
+    let html = `<div class="subcat-chip ${!libState.activePath.length?'active':''}" onclick="setLibSubcatPath(0,null)">Todas</div>`;
+    let nodes = cat.subcats || [];
+    let depth = 0;
+    while(nodes && nodes.length){
+      const chosenId = libState.activePath[depth];
+      html += nodes.map(n=>`<div class="subcat-chip ${chosenId===n.id?'active':''}" onclick="setLibSubcatPath(${depth},'${n.id}')">${n.name}</div>`).join('');
+      const chosenNode = nodes.find(n=>n.id===chosenId);
+      if(!chosenNode) break;
+      nodes = chosenNode.children || [];
+      depth++;
+    }
+    (cat.facets||[]).forEach(f=>{
+      html += `<div class="subcat-chip" style="opacity:.5;pointer-events:none;">· ${f.name} ·</div>`;
+      html += f.options.map(opt=>`<div class="subcat-chip ${libState.activeFacets[f.id]===opt?'active':''}" onclick="setLibFacet('${f.id}','${opt.replace(/'/g,"\\'")}')">${opt}</div>`).join('');
+    });
+    subcatRow.innerHTML = html;
+  } else {
+    subcatRow.style.display='none';
+  }
+
+  const list = filterExercises();
+  document.getElementById('lib-count').textContent = `${list.length} ejercicio${list.length===1?'':'s'}`;
+  document.getElementById('lib-list').innerHTML = list.length ? list.map(renderExCard).join('') :
+    `<div class="empty-state"><div class="e-icon">🔎</div><div class="e-title">Sin resultados</div><div class="e-sub">Prueba otra categoría o término de búsqueda.</div></div>`;
+}
+
+function toggleLibCat(id){
+  if(libState.activeCats.has(id)) libState.activeCats.delete(id);
+  else libState.activeCats.add(id);
+  libState.activePath = [];
+  libState.activeFacets = {};
+  renderBiblioteca();
+}
+function setLibSubcatPath(depth, nodeId){
+  if(nodeId===null){ libState.activePath = []; }
+  else if(libState.activePath[depth]===nodeId){ libState.activePath = libState.activePath.slice(0, depth); }
+  else { libState.activePath = libState.activePath.slice(0, depth).concat([nodeId]); }
+  renderBiblioteca();
+}
+function setLibFacet(facetId, value){
+  if(libState.activeFacets[facetId]===value) delete libState.activeFacets[facetId];
+  else libState.activeFacets[facetId] = value;
+  renderBiblioteca();
+}
+
+document.addEventListener('input', (e)=>{
+  if(e.target && e.target.id==='lib-search-input'){
+    libState.search = e.target.value.toLowerCase();
+    renderBiblioteca();
+  }
+  if(e.target && e.target.id==='pda-search'){ renderPdaList(); }
+  if(e.target && e.target.id==='vp-search'){ renderVariantPickerList(); }
+});
+
+function filterExercises(){
+  return state.exercises.filter(ex=>{
+    if(libState.activeCats.size){
+      const catsOfEx = ex.cats.map(c=>c.c);
+      const matches = [...libState.activeCats].some(c=>catsOfEx.includes(c));
+      if(!matches) return false;
+      if(libState.activeCats.size===1){
+        const catId = [...libState.activeCats][0];
+        const cc = ex.cats.find(c=>c.c===catId);
+        if(cc){
+          if(libState.activePath.length){
+            const path = cc.path||[];
+            for(let i=0;i<libState.activePath.length;i++){ if(path[i]!==libState.activePath[i]) return false; }
+          }
+          for(const fid of Object.keys(libState.activeFacets)){
+            if((cc.facets||{})[fid] !== libState.activeFacets[fid]) return false;
+          }
+        }
+      }
+    }
+    if(libState.search){
+      const hay = (ex.name+' '+ex.desc+' '+(ex.tips||[]).join(' ')).toLowerCase();
+      if(!hay.includes(libState.search)) return false;
+    }
+    return true;
+  }).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+}
+
+function renderExCard(ex){
+  const primaryCat = catInfo(ex.cats[0] ? ex.cats[0].c : '');
+  const [color, colorLight] = CAT_COLOR[primaryCat.color] || CAT_COLOR.gray;
+  const catsHtml = ex.cats.map(c=>{
+    const ci = catInfo(c.c);
+    const [cc, cl] = CAT_COLOR[ci.color] || CAT_COLOR.gray;
+    return `<span class="badge" style="background:${cl};color:${cc};">${ci.icon} ${ci.name}</span>`;
+  }).join('');
+  const imgOrIcon = ex.image ? `<img src="${ex.image}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;margin:12px 0 12px 12px;flex-shrink:0;">` :
+    `<div class="ex-thumb" style="background:${colorLight};">${ex.icon||'⚪'}</div>`;
+  const inPrograms = findProgramsWithExercise(ex.id);
+  const inProgramBadge = inPrograms.length
+    ? `<span class="badge" style="background:var(--green-light);color:var(--green-dark);" title="${inPrograms.map(p=>p.plan.name+' ('+p.days.join(', ')+')').join(' · ')}">📋 En ${inPrograms.length} programa${inPrograms.length===1?'':'s'}</span>`
+    : '';
+  const tagsBadge = (ex.tags||[]).map(t=>`<span class="badge" style="background:var(--amber-light,#FAEEDA);color:var(--amber-dark,#BA7517);">🏷️ ${t}</span>`).join('');
+  return `<div class="ex-card">
+    <div class="ex-main" onclick="openExerciseDetail('${ex.id}')">
+      <div class="ex-color-bar" style="background:${color};"></div>
+      ${imgOrIcon}
+      <div class="ex-content">
+        <div class="ex-top">
+          <div class="ex-name">${ex.name}</div>
+        </div>
+        <div class="ex-cats">${catsHtml}${tagsBadge}${inProgramBadge}</div>
+        <div class="ex-desc">${ex.desc||''}</div>
+        <div class="ex-meta">
+          ${ex.duration?`<span>⏱ ${ex.duration}</span>`:''}
+          ${ex.equipment?`<span>🧰 ${ex.equipment}</span>`:''}
+          ${ex.setsReps?`<span>🔁 ${ex.setsReps}</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="ex-actions">
+      <button class="btn-sched" onclick="openScheduleModal('${ex.id}')">📅 Programar</button>
+      ${(ex.video||ex.videoType==='handle'||ex.videoType==='session')?`<button type="button" class="btn-icon-sm" onclick="event.stopPropagation();openExerciseVideo('${ex.id}')">▶️</button>`:''}
+      <button class="btn-icon-sm" onclick="openExerciseEditor('${ex.id}')">✏️</button>
+    </div>
+  </div>`;
+}
+
+/* =========================================================================
+   DETALLE DE EJERCICIO
+   ========================================================================= */
+let currentDetailExId = null;
+let trackScheduleCtx = null; // {dateStr, itemId} cuando se abre el ejercicio desde Hoy/Calendario
+let trackDraftSets = []; // filas en edición del formulario de registro: [{weight,reps}]
+let exdActiveTab = 'ejecucion';
+
+function openExerciseDetail(exId, ctxDateStr, ctxItemId){
+  const ex = getExercise(exId);
+  if(!ex) return;
+  currentDetailExId = exId;
+  trackScheduleCtx = (ctxDateStr && ctxItemId) ? {dateStr:ctxDateStr, itemId:ctxItemId} : null;
+  // Prepara filas de registro por defecto: si el ítem programado tiene nº de series, una fila por serie.
+  let defaultRows = 1;
+  if(trackScheduleCtx){
+    const schedItem = (state.schedule[trackScheduleCtx.dateStr]||[]).find(i=>i.id===trackScheduleCtx.itemId);
+    if(schedItem && schedItem.sets) defaultRows = schedItem.sets;
+  }
+  trackDraftSets = Array.from({length:defaultRows}, ()=>({weight:'',reps:''}));
+  exdActiveTab = trackScheduleCtx ? 'seguimiento' : 'ejecucion';
+  document.getElementById('exd-title').textContent = ex.name;
+  const primaryCat = catInfo(ex.cats[0]?ex.cats[0].c:'');
+  const [color, colorLight] = CAT_COLOR[primaryCat.color] || CAT_COLOR.gray;
+  const hero = document.getElementById('exd-hero');
+  if(ex.image){ hero.innerHTML = `<img src="${ex.image}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`; hero.style.background='none'; }
+  else { hero.textContent = ex.icon||'⚪'; hero.style.background=colorLight; }
+
+  const exdInPrograms = findProgramsWithExercise(ex.id);
+  document.getElementById('exd-cats').innerHTML = ex.cats.map(c=>{
+    const ci = catInfo(c.c);
+    const [cc, cl] = CAT_COLOR[ci.color] || CAT_COLOR.gray;
+    const pathLabel = subcatPathLabel(ci, c.path);
+    const facetLabel = c.facets && Object.keys(c.facets).length ? ' · ' + Object.values(c.facets).join(' · ') : '';
+    return `<span class="badge" style="background:${cl};color:${cc};">${ci.icon} ${ci.name}${pathLabel?' · '+pathLabel:''}${facetLabel}</span>`;
+  }).join('') + (ex.tags||[]).map(t=>`<span class="badge" style="background:var(--amber-light,#FAEEDA);color:var(--amber-dark,#BA7517);">🏷️ ${t}</span>`).join('') + (exdInPrograms.length ? `<span class="badge" style="background:var(--green-light);color:var(--green-dark);">📋 En ${exdInPrograms.length} programa${exdInPrograms.length===1?'':'s'}</span>` : '');
+
+  renderExdTabs();
+  openModal('modal-exdetail');
+}
+
+function renderExdTabs(){
+  const ex = getExercise(currentDetailExId);
+  const tabs = [
+    {id:'ejecucion', label:'Ejecución'},
+    {id:'seguimiento', label:'📈 Seguimiento'},
+    {id:'respiracion', label:'Respiración'},
+    {id:'tips', label:'Tips'},
+    {id:'variantes', label:'Variantes'},
+    {id:'info', label:'Info'},
+  ];
+  document.getElementById('exd-tabs').innerHTML = tabs.map(t=>
+    `<div class="exd-tab ${exdActiveTab===t.id?'active':''}" onclick="setExdTab('${t.id}')">${t.label}</div>`
+  ).join('');
+
+  const execHtml = `<div class="exd-block"><div class="exd-block-label">Descripción</div><div class="exd-block-body">${ex.desc||'—'}</div></div>
+    <div class="exd-block"><div class="exd-block-label">Ejecución paso a paso</div>
+      <ul class="exd-list">${(ex.execution||[]).map(s=>`<li>${s}</li>`).join('') || '<li>Sin pasos definidos todavía.</li>'}</ul>
+    </div>`;
+
+  const breathHtml = `<div class="exd-block"><div class="exd-block-label">Respiración</div>
+      <ul class="exd-list">${(ex.breathing||[]).map(s=>`<li>${s}</li>`).join('') || '<li>No especificada todavía.</li>'}</ul>
+    </div>`;
+
+  const tipsHtml = `<div class="exd-block"><div class="exd-block-label">Tips clave</div>
+      <ul class="exd-list">${(ex.tips||[]).map(s=>`<li>${s}</li>`).join('') || '<li>Sin tips todavía.</li>'}</ul>
+    </div>
+    ${ex.injury ? `<div class="exd-note"><b>Nota de lesión:</b> ${ex.injury}</div>` : ''}`;
+
+  const variantsHtml = (ex.variants||[]).length ? `<div class="exd-block"><div class="exd-block-label">Variantes de este ejercicio</div></div>` +
+    (ex.variants||[]).map(id=>{
+      const v = getExercise(id);
+      if(!v) return '';
+      return `<div class="planned-item" style="cursor:pointer;" onclick="openExerciseDetail('${id}')">
+        <div class="planned-body"><div class="planned-name">${v.icon||'💪'} ${v.name}</div><div class="planned-sub">Toca para ver esta variante</div></div>
+        <div style="color:var(--text3);font-weight:800;">›</div>
+      </div>`;
+    }).join('') : `<div class="exd-block"><div class="exd-block-label">Variantes</div><div class="exd-block-body">Sin variantes enlazadas. Si un día no puedes hacer este ejercicio, enlaza aquí una alternativa desde el editor (✏️) para poder saltar directamente a ella.</div></div>`;
+
+  const exInPrograms = findProgramsWithExercise(ex.id);
+  const programsHtml = exInPrograms.length
+    ? `<div class="exd-block"><div class="exd-block-label">📋 Incluido en estos programas</div></div>` +
+      exInPrograms.map(({plan, days})=>`<div class="planned-item" style="cursor:pointer;" onclick="closeModal('modal-exdetail');openPlanDetail('${plan.id}')">
+        <div class="planned-body">
+          <div class="planned-name">${plan.name}</div>
+          <div class="planned-sub">${days.join(' · ')}</div>
+        </div>
+        <div style="color:var(--text3);font-weight:800;">›</div>
+      </div>`).join('')
+    : `<div class="exd-block"><div class="exd-block-label">📋 Programas</div><div class="exd-block-body">Este ejercicio todavía no está incluido en ningún programa. Puedes añadirlo desde el detalle de un programa (botón "+ Añadir" en el bloque del día que quieras).</div></div>`;
+
+  const infoHtml = `<div class="exd-block"><div class="exd-block-label">Series / repeticiones sugeridas</div><div class="exd-block-body">${ex.setsReps||'—'}</div></div>
+    <div class="exd-block"><div class="exd-block-label">Duración estimada</div><div class="exd-block-body">${ex.duration||'—'}</div></div>
+    <div class="exd-block"><div class="exd-block-label">Material / equipo</div><div class="exd-block-body">${ex.equipment||'—'}</div></div>
+    ${(ex.video||ex.videoType==='handle')?`<div class="exd-block"><div class="exd-block-label">Vídeo</div><a href="#" onclick="event.preventDefault();openExerciseVideo('${ex.id}')" style="color:var(--green);font-weight:700;font-size:13.5px;">▶️ Ver vídeo de referencia</a></div>`:''}
+    ${programsHtml}`;
+
+  const seguimientoHtml = renderSeguimientoPanel(ex);
+
+  document.getElementById('exd-panels').innerHTML = `
+    <div class="exd-panel ${exdActiveTab==='ejecucion'?'active':''}" data-p="ejecucion">${execHtml}</div>
+    <div class="exd-panel ${exdActiveTab==='seguimiento'?'active':''}" data-p="seguimiento">${seguimientoHtml}</div>
+    <div class="exd-panel ${exdActiveTab==='respiracion'?'active':''}" data-p="respiracion">${breathHtml}</div>
+    <div class="exd-panel ${exdActiveTab==='tips'?'active':''}" data-p="tips">${tipsHtml}</div>
+    <div class="exd-panel ${exdActiveTab==='variantes'?'active':''}" data-p="variantes">${variantsHtml}</div>
+    <div class="exd-panel ${exdActiveTab==='info'?'active':''}" data-p="info">${infoHtml}</div>
+  `;
+}
+
+/* ---------- PANEL DE SEGUIMIENTO (registro de series/pesos + historial) ---------- */
+function renderSeguimientoPanel(ex){
+  const last3 = getLastNLogs(ex.id, 3);
+  const allLogs = getExerciseLogs(ex.id);
+
+  const ctxNote = trackScheduleCtx
+    ? `<div class="exd-note">📅 Estás registrando la sesión de hoy para este ejercicio programado. Al guardar, se marcará como hecho.</div>`
+    : `<div class="exd-block-body" style="margin-bottom:8px;">Puedes registrar un entrenamiento libre de este ejercicio aunque no esté programado hoy.</div>`;
+
+  const last3Html = last3.length ? `
+    <div class="exd-block">
+      <div class="exd-block-label">🕓 Tus últimos ${last3.length} registro${last3.length===1?'':'s'} (para saber por qué peso empezar)</div>
+      ${last3.map(l=>`
+        <div class="planned-item" style="align-items:flex-start;">
+          <div class="planned-body">
+            <div class="planned-name">${fmtDateShort(l.date)}</div>
+            <div class="planned-sub">${fmtSetsSummary(l.sets)}${l.comment?' · '+l.comment:''}</div>
+          </div>
+        </div>`).join('')}
+    </div>` : `<div class="exd-block"><div class="exd-block-label">🕓 Últimos registros</div><div class="exd-block-body">Todavía no hay registros de este ejercicio. El primero que guardes aparecerá aquí.</div></div>`;
+
+  const rowsHtml = trackDraftSets.map((row,i)=>`
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+      <div style="font-size:12px;color:var(--text3);width:20px;flex-shrink:0;">${i+1}.</div>
+      <input class="form-input" type="number" step="0.5" placeholder="Peso (kg)" id="track-w-${i}" value="${row.weight}" style="flex:1;">
+      <input class="form-input" type="number" placeholder="Reps" id="track-r-${i}" value="${row.reps}" style="flex:1;">
+      <button class="planned-rm" onclick="trackRemoveRow(${i})">✕</button>
+    </div>`).join('');
+
+  return `
+    ${ctxNote}
+    ${last3Html}
+    <div class="exd-block">
+      <div class="exd-block-label">📝 Registrar esta sesión</div>
+      ${rowsHtml || '<div style="font-size:12.5px;color:var(--text3);padding:4px 0;">Sin series añadidas.</div>'}
+      <button class="link-btn" style="font-size:12.5px;" onclick="trackAddRow()">+ Añadir serie</button>
+      <div class="form-group" style="margin-top:10px;">
+        <label class="form-label">Comentario (sensaciones, dolor, técnica...)</label>
+        <textarea class="form-textarea" id="track-comment" placeholder="Ej: buena técnica, sin molestias en el codo"></textarea>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="saveTrackLog()">💾 ${trackScheduleCtx?'Guardar y marcar como hecho':'Guardar registro'}</button>
+    </div>
+    <div class="exd-block">
+      <div class="exd-block-label">📚 Historial completo de este ejercicio (${allLogs.length})</div>
+      ${allLogs.length ? allLogs.map(l=>`
+        <div class="planned-item">
+          <div class="planned-body">
+            <div class="planned-name">${fmtDateShort(l.date)}</div>
+            <div class="planned-sub">${fmtSetsSummary(l.sets)}${l.comment?' · '+l.comment:''}</div>
+          </div>
+          <button class="planned-rm" onclick="deleteExerciseLog('${l.id}')">✕</button>
+        </div>`).join('') : `<div class="exd-block-body">Sin historial todavía.</div>`}
+    </div>
+  `;
+}
+
+function syncTrackDraftFromDOM(){
+  trackDraftSets.forEach((row,i)=>{
+    const w = document.getElementById('track-w-'+i);
+    const r = document.getElementById('track-r-'+i);
+    if(w) row.weight = w.value;
+    if(r) row.reps = r.value;
+  });
+}
+function trackAddRow(){
+  syncTrackDraftFromDOM();
+  trackDraftSets.push({weight:'',reps:''});
+  renderExdTabs();
+}
+function trackRemoveRow(i){
+  syncTrackDraftFromDOM();
+  trackDraftSets.splice(i,1);
+  renderExdTabs();
+}
+function saveTrackLog(){
+  syncTrackDraftFromDOM();
+  const commentEl = document.getElementById('track-comment');
+  const comment = commentEl ? commentEl.value.trim() : '';
+  const setsArr = trackDraftSets.filter(s=>s.weight!=='' || s.reps!=='').map(s=>({weight:s.weight, reps:s.reps}));
+  if(!setsArr.length && !comment){ showToast('Añade al menos un peso/reps o un comentario'); return; }
+  const date = trackScheduleCtx ? trackScheduleCtx.dateStr : todayStr();
+  addExerciseLog(currentDetailExId, date, setsArr, comment, trackScheduleCtx?trackScheduleCtx.itemId:null);
+  if(trackScheduleCtx){
+    const items = state.schedule[trackScheduleCtx.dateStr]||[];
+    const it = items.find(i=>i.id===trackScheduleCtx.itemId);
+    if(it){ it.done = true; persist(); }
+    renderCurrentScreenSoft();
+  }
+  showToast('Registro guardado ✓');
+  trackDraftSets = [{weight:'',reps:''}];
+  renderExdTabs();
+}
+function setExdTab(id){ exdActiveTab=id; renderExdTabs(); }
+
+/* ---------- HISTORIAL COMPLETO (todos los ejercicios) ---------- */
+function openFullHistoryModal(){
+  document.getElementById('fh-search').value = '';
+  renderFullHistoryList();
+  openModal('modal-fullhistory');
+}
+function renderFullHistoryList(){
+  const q = (document.getElementById('fh-search').value||'').toLowerCase();
+  const logs = state.logs.slice().sort((a,b)=>b.createdAt-a.createdAt).filter(l=>{
+    if(!q) return true;
+    const ex = getExercise(l.exId);
+    return ex && ex.name.toLowerCase().includes(q);
+  }).slice(0,80);
+  document.getElementById('fh-list').innerHTML = logs.length ? logs.map(l=>{
+    const ex = getExercise(l.exId);
+    if(!ex) return '';
+    return `<div class="planned-item" style="cursor:pointer;" onclick="closeModal('modal-fullhistory');openExerciseDetail('${ex.id}')">
+      <div class="planned-body">
+        <div class="planned-name">${ex.icon} ${ex.name} <span style="font-weight:500;color:var(--text3);">· ${fmtDateShort(l.date)}</span></div>
+        <div class="planned-sub">${fmtSetsSummary(l.sets)}${l.comment?' · '+l.comment:''}</div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty-state"><div class="e-icon">📭</div><div class="e-title">Sin registros todavía</div><div class="e-sub">Registra tu primera sesión desde cualquier ejercicio, pestaña "Seguimiento".</div></div>`;
+}
+
+/* =========================================================================
+   EDITOR DE EJERCICIOS
+   ========================================================================= */
+let editorExId = null;
+let editorSelectedCats = {}; // {catId: {path:[...], facets:{...}}}
+let editorVariantIds = []; // ids de ejercicios enlazados como variantes
+
+function openExerciseEditor(exId){
+  closeModal('modal-exdetail');
+  editorExId = exId;
+  const ex = exId ? getExercise(exId) : null;
+  document.getElementById('exeditor-title').textContent = ex ? 'Editar ejercicio' : 'Nuevo ejercicio';
+  document.getElementById('ef-name').value = ex ? ex.name : '';
+  document.getElementById('ef-icon').value = ex ? (ex.icon||'') : '💪';
+  document.getElementById('ef-desc').value = ex ? (ex.desc||'') : '';
+  document.getElementById('ef-execution').value = ex ? (ex.execution||[]).join('\n') : '';
+  document.getElementById('ef-breathing').value = ex ? (Array.isArray(ex.breathing) ? ex.breathing.join('\n') : (ex.breathing||'')) : '';
+  document.getElementById('ef-tips').value = ex ? (ex.tips||[]).join('\n') : '';
+  document.getElementById('ef-injury').value = ex ? (ex.injury||'') : '';
+  document.getElementById('ef-setsreps').value = ex ? (ex.setsReps||'') : '';
+  document.getElementById('ef-duration').value = ex ? (ex.duration||'') : '';
+  document.getElementById('ef-equipment').value = ex ? (ex.equipment||'') : '';
+  document.getElementById('ef-tags').value = ex ? (ex.tags||[]).join(', ') : '';
+  document.getElementById('ef-video').value = ex ? (ex.video||'') : '';
+  document.getElementById('ef-video-type').value = ex ? (ex.videoType||(ex.video?'url':'')) : '';
+  document.getElementById('ef-video-url').value = (ex && (ex.videoType==='url'||!ex.videoType) && ex.video) ? ex.video : '';
+  editorVideoFileName = ex ? (ex.videoFileName||'') : '';
+  updateEfVideoStatusUI();
+  document.getElementById('ef-image').value = ex ? (ex.image||'') : '';
+  document.getElementById('ef-image-url').value = (ex && ex.image && !ex.image.startsWith('data:')) ? ex.image : '';
+  updateExImagePreview(ex ? (ex.image||'') : '');
+  document.getElementById('ef-delete-btn').style.display = ex ? 'block' : 'none';
+
+  editorSelectedCats = {};
+  if(ex){ ex.cats.forEach(c=>{ editorSelectedCats[c.c] = {path: (c.path||[]).slice(), facets: Object.assign({}, c.facets||{})}; }); }
+  renderEditorCats();
+  editorVariantIds = ex ? (ex.variants||[]).slice() : [];
+  renderEditorVariantChips();
+  openModal('modal-exeditor');
+}
+
+function renderEditorCats(){
+  document.getElementById('ef-cats').innerHTML = state.categories.map(c=>{
+    const on = editorSelectedCats.hasOwnProperty(c.id);
+    const [color] = CAT_COLOR[c.color] || CAT_COLOR.gray;
+    return `<div class="toggle-pill ${on?'on':''}" style="${on?`background:${color};border-color:${color};`:''}" onclick="toggleEditorCat('${c.id}')">${c.icon} ${c.name}</div>`;
+  }).join('');
+  renderEditorCatsDetail();
+}
+function toggleEditorCat(catId){
+  if(editorSelectedCats.hasOwnProperty(catId)) delete editorSelectedCats[catId];
+  else editorSelectedCats[catId] = {path: [], facets: {}};
+  renderEditorCats();
+}
+
+// Pinta, para cada categoría activa, el selector de subcategoría en árbol
+// (nivel a nivel, escogiendo un nodo abre sus hijos si los tiene) y las facetas
+// (Zona, Nivel, Tipo rehabilitación...) de esa categoría, si las tiene.
+function renderEditorCatsDetail(){
+  const wrap = document.getElementById('ef-cats-detail');
+  const catIds = Object.keys(editorSelectedCats);
+  if(!catIds.length){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = catIds.map(catId=>{
+    const cat = catInfo(catId);
+    const sel = editorSelectedCats[catId];
+    const levels = [];
+    let nodes = cat.subcats || [];
+    let depth = 0;
+    while(nodes && nodes.length){
+      const chosenId = sel.path[depth];
+      levels.push(`<div class="ef-cat-detail-level">` + nodes.map(n=>
+        `<div class="subcat-chip ${chosenId===n.id?'active':''}" onclick="setEditorSubcat('${catId}',${depth},'${n.id}')">${n.name}</div>`
+      ).join('') + `</div>`);
+      const chosenNode = nodes.find(n=>n.id===chosenId);
+      if(!chosenNode) break;
+      nodes = chosenNode.children || [];
+      depth++;
+    }
+    const facetsHtml = (cat.facets||[]).map(f=>{
+      const val = sel.facets[f.id];
+      return `<div class="ef-cat-detail-title">${f.name}</div><div class="ef-cat-detail-level">` +
+        f.options.map(opt=>`<div class="subcat-chip ${val===opt?'active':''}" onclick="setEditorFacet('${catId}','${f.id}','${opt.replace(/'/g,"\\'")}')">${opt}</div>`).join('') +
+        `</div>`;
+    }).join('');
+    if(!levels.length && !facetsHtml) return '';
+    return `<div class="ef-cat-detail">
+      <div class="ef-cat-detail-title">${cat.icon} ${cat.name} — subcategoría</div>
+      ${levels.join('') || '<div class="form-hint" style="margin:0 0 8px;">Sin subcategorías.</div>'}
+      ${facetsHtml}
+    </div>`;
+  }).join('');
+}
+function setEditorSubcat(catId, depth, nodeId){
+  const sel = editorSelectedCats[catId];
+  if(sel.path[depth]===nodeId) sel.path = sel.path.slice(0, depth); // volver a pulsar deselecciona ese nivel y los siguientes
+  else sel.path = sel.path.slice(0, depth).concat([nodeId]);
+  renderEditorCatsDetail();
+}
+function setEditorFacet(catId, facetId, value){
+  const sel = editorSelectedCats[catId];
+  if(sel.facets[facetId]===value) delete sel.facets[facetId];
+  else sel.facets[facetId] = value;
+  renderEditorCatsDetail();
+}
+
+/* ---- Variantes: enlazar ejercicios de la biblioteca como variante de éste ---- */
+function renderEditorVariantChips(){
+  const wrap = document.getElementById('ef-variants-chips');
+  if(!editorVariantIds.length){ wrap.innerHTML = '<div class="form-hint" style="margin:0;">Sin variantes enlazadas todavía.</div>'; return; }
+  wrap.innerHTML = editorVariantIds.map(id=>{
+    const ex = getExercise(id);
+    if(!ex) return '';
+    return `<div class="toggle-pill on" style="background:var(--text);border-color:var(--text);">${ex.icon||'💪'} ${ex.name} <span onclick="event.stopPropagation();removeEditorVariant('${id}')" style="margin-left:4px;">✕</span></div>`;
+  }).join('');
+}
+function removeEditorVariant(id){
+  editorVariantIds = editorVariantIds.filter(v=>v!==id);
+  renderEditorVariantChips();
+}
+function openVariantPicker(){
+  document.getElementById('vp-search').value = '';
+  renderVariantPickerList();
+  openModal('modal-variant-picker');
+}
+function renderVariantPickerList(){
+  const q = (document.getElementById('vp-search').value||'').toLowerCase();
+  const list = state.exercises
+    .filter(e=>e.id!==editorExId && (!q || e.name.toLowerCase().includes(q)))
+    .sort((a,b)=>a.name.localeCompare(b.name,'es')).slice(0,60);
+  document.getElementById('vp-list').innerHTML = list.length ? list.map(e=>{
+    const on = editorVariantIds.includes(e.id);
+    return `<div class="planned-item" style="cursor:pointer;${on?'background:var(--green-light);border-radius:8px;':''}" onclick="toggleEditorVariant('${e.id}')">
+      <div class="planned-body"><div class="planned-name">${e.icon||'💪'} ${e.name}</div></div>
+      ${on?'<span style="color:var(--green);font-weight:800;">✓</span>':''}
+    </div>`;
+  }).join('') : `<div class="form-hint">Sin resultados.</div>`;
+}
+function toggleEditorVariant(id){
+  if(editorVariantIds.includes(id)) editorVariantIds = editorVariantIds.filter(v=>v!==id);
+  else editorVariantIds.push(id);
+  renderVariantPickerList();
+  renderEditorVariantChips();
+}
+
+function updateExImagePreview(url){
+  const wrap = document.getElementById('ef-image-preview-wrap');
+  const img = document.getElementById('ef-image-preview');
+  if(url){ img.src = url; wrap.style.display='flex'; }
+  else { img.src=''; wrap.style.display='none'; }
+}
+
+function clearExerciseImage(){
+  document.getElementById('ef-image').value = '';
+  document.getElementById('ef-image-url').value = '';
+  updateExImagePreview('');
+}
+
+function handleExerciseImageFile(inputEl){
+  const file = inputEl.files && inputEl.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ showToast('Elige un archivo de imagen'); inputEl.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const maxDim = 480;
+      let w = img.width, h = img.height;
+      if(w>=h && w>maxDim){ h = Math.round(h*maxDim/w); w = maxDim; }
+      else if(h>w && h>maxDim){ w = Math.round(w*maxDim/h); h = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+      document.getElementById('ef-image').value = dataUrl;
+      document.getElementById('ef-image-url').value = '';
+      updateExImagePreview(dataUrl);
+      showToast('Foto añadida ✓ (recuerda pulsar Guardar)');
+    };
+    img.onerror = ()=> showToast('No se pudo leer esa imagen');
+    img.src = e.target.result;
+  };
+  reader.onerror = ()=> showToast('Error al leer el archivo');
+  reader.readAsDataURL(file);
+  inputEl.value = '';
+}
+
+/* =========================================================================
+   VÍDEOS LOCALES DEL MÓVIL (sin subirlos)
+   En vez de leer y guardar el vídeo entero (base64, pesado y limitado a 50MB),
+   guardamos solo una REFERENCIA al archivo tal y como está en el móvil:
+   - Si el navegador soporta la File System Access API (Chrome/Android, Chrome/Edge
+     escritorio), guardamos un "handle" al archivo en IndexedDB. Ese handle no es el
+     vídeo, es un puntero al archivo original: mientras no lo muevas ni borres del
+     móvil, la app podrá volver a abrirlo siempre, sin volver a seleccionarlo.
+   - Si el navegador NO soporta esa API (Safari/iOS, de momento), usamos un enlace
+     "blob" temporal válido solo mientras no cierres/recargues la app; al reabrir
+     la app tocará volver a seleccionar el archivo (se avisa en pantalla).
+   ========================================================================= */
+const VIDEO_DB_NAME = 'bm2_video_handles';
+const VIDEO_STORE = 'handles';
+function openVideoDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(VIDEO_DB_NAME, 1);
+    req.onupgradeneeded = ()=>{ req.result.createObjectStore(VIDEO_STORE); };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function idbSetHandle(exId, handle){
+  const db = await openVideoDB();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(VIDEO_STORE,'readwrite');
+    tx.objectStore(VIDEO_STORE).put(handle, exId);
+    tx.oncomplete = ()=>resolve();
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+async function idbGetHandle(exId){
+  const db = await openVideoDB();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(VIDEO_STORE,'readonly');
+    const req = tx.objectStore(VIDEO_STORE).get(exId);
+    req.onsuccess = ()=>resolve(req.result||null);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function idbDeleteHandle(exId){
+  const db = await openVideoDB();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(VIDEO_STORE,'readwrite');
+    tx.objectStore(VIDEO_STORE).delete(exId);
+    tx.oncomplete = ()=>resolve();
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+
+const supportsFileHandles = !!window.showOpenFilePicker;
+let sessionVideoUrls = {}; // {exId: blobUrl} - solo dura mientras no recargues la página
+
+// Nombre de archivo mostrado mientras se edita (antes de guardar el ejercicio)
+let editorVideoFileName = '';
+
+function updateEfVideoStatusUI(){
+  const wrap = document.getElementById('ef-video-status');
+  const label = document.getElementById('ef-video-status-label');
+  const type = document.getElementById('ef-video-type').value;
+  const val = document.getElementById('ef-video').value;
+  if(type==='handle'){
+    wrap.style.display='flex';
+    label.textContent = '📎 Enlazado: ' + (editorVideoFileName || 'archivo de tu galería') + ' (se abrirá siempre desde tu móvil, sin volver a subirlo)';
+  } else if(type==='session'){
+    wrap.style.display='flex';
+    label.textContent = '📎 Seleccionado: ' + (editorVideoFileName || 'archivo de tu galería') + ' — solo funcionará mientras no cierres/recargues la app (tu navegador no permite guardarlo de forma permanente)';
+  } else if(val){
+    wrap.style.display='flex';
+    label.textContent = '🔗 URL de vídeo enlazada';
+  } else {
+    wrap.style.display='none';
+  }
+}
+
+function clearExerciseVideo(){
+  document.getElementById('ef-video').value = '';
+  document.getElementById('ef-video-type').value = '';
+  document.getElementById('ef-video-url').value = '';
+  document.getElementById('ef-video-file').value = '';
+  editorVideoFileName = '';
+  if(editorExId){ idbDeleteHandle(editorExId).catch(()=>{}); }
+  if(editorExId && sessionVideoUrls[editorExId]){ URL.revokeObjectURL(sessionVideoUrls[editorExId]); delete sessionVideoUrls[editorExId]; }
+  updateEfVideoStatusUI();
+}
+
+function setExerciseVideoUrl(url){
+  document.getElementById('ef-video').value = url;
+  document.getElementById('ef-video-type').value = url ? 'url' : '';
+  editorVideoFileName = '';
+  updateEfVideoStatusUI();
+}
+
+// Botón principal: enlazar un vídeo que ya está en el móvil, sin subirlo.
+async function linkExerciseVideoFile(){
+  if(!editorExId){
+    showToast('Guarda el ejercicio primero (nombre + categoría) y vuelve a editarlo para enlazar un vídeo');
+    return;
+  }
+  if(supportsFileHandles){
+    try{
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description:'Vídeos', accept:{ 'video/*':['.mp4','.mov','.m4v','.avi','.mkv','.webm'] } }],
+        multiple:false
+      });
+      await idbSetHandle(editorExId, handle);
+      editorVideoFileName = handle.name;
+      document.getElementById('ef-video').value = '';
+      document.getElementById('ef-video-type').value = 'handle';
+      document.getElementById('ef-video-url').value = '';
+      updateEfVideoStatusUI();
+      showToast('Vídeo enlazado ✓ (recuerda pulsar Guardar)');
+    }catch(e){
+      if(e.name!=='AbortError') showToast('No se pudo enlazar el vídeo');
+    }
+  } else {
+    // Navegador sin File System Access API (p.ej. Safari/iOS): fallback de solo esta sesión.
+    document.getElementById('ef-video-file').click();
+  }
+}
+
+function handleExerciseVideoFileFallback(inputEl){
+  const file = inputEl.files && inputEl.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('video/')){
+    showToast('Por favor elige un archivo de vídeo');
+    inputEl.value='';
+    return;
+  }
+  if(!editorExId){
+    showToast('Guarda el ejercicio primero y vuelve a editarlo para enlazar un vídeo');
+    inputEl.value='';
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  sessionVideoUrls[editorExId] = url;
+  editorVideoFileName = file.name;
+  document.getElementById('ef-video').value = '';
+  document.getElementById('ef-video-type').value = 'session';
+  document.getElementById('ef-video-url').value = '';
+  updateEfVideoStatusUI();
+  showToast('Vídeo seleccionado ✓ (solo esta sesión — recuerda pulsar Guardar)');
+  inputEl.value = '';
+}
+
+function testOpenEditorVideo(){
+  if(!editorExId) return;
+  openExerciseVideo(editorExId);
+}
+
+// Abre el vídeo de referencia de un ejercicio, sea cual sea su tipo (handle/session/url).
+async function openExerciseVideo(exId){
+  const ex = getExercise(exId);
+  if(!ex) { showToast('Ejercicio no encontrado'); return; }
+  if(ex.videoType==='handle'){
+    try{
+      const handle = await idbGetHandle(exId);
+      if(!handle){ showToast('No se encontró el enlace al vídeo. Vuelve a enlazarlo desde Editar.'); return; }
+      let perm = await handle.queryPermission({mode:'read'});
+      if(perm!=='granted'){ perm = await handle.requestPermission({mode:'read'}); }
+      if(perm!=='granted'){ showToast('Necesitas dar permiso para abrir el vídeo'); return; }
+      const file = await handle.getFile();
+      const url = URL.createObjectURL(file);
+      window.open(url, '_blank');
+    }catch(e){
+      showToast('No se pudo abrir el vídeo. Puede que el archivo se haya movido o borrado del móvil.');
+    }
+  } else if(ex.videoType==='session' || sessionVideoUrls[exId]){
+    if(sessionVideoUrls[exId]) window.open(sessionVideoUrls[exId], '_blank');
+    else showToast('Este vídeo era solo de la sesión anterior: vuelve a enlazarlo desde Editar.');
+  } else if(ex.video){
+    window.open(ex.video, '_blank');
+  } else {
+    showToast('Este ejercicio no tiene vídeo enlazado');
+  }
+}
+
+function saveExerciseEditor(){
+  const name = document.getElementById('ef-name').value.trim();
+  if(!name){ showToast('Ponle un nombre al ejercicio'); return; }
+  const catIds = Object.keys(editorSelectedCats);
+  if(!catIds.length){ showToast('Elige al menos una categoría'); return; }
+  const cats = catIds.map(id=>({c:id, path: editorSelectedCats[id].path.slice(), facets: Object.assign({}, editorSelectedCats[id].facets)}));
+
+  const data = {
+    name,
+    icon: document.getElementById('ef-icon').value.trim() || '💪',
+    desc: document.getElementById('ef-desc').value.trim(),
+    execution: document.getElementById('ef-execution').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    breathing: document.getElementById('ef-breathing').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    tips: document.getElementById('ef-tips').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    injury: document.getElementById('ef-injury').value.trim(),
+    setsReps: document.getElementById('ef-setsreps').value.trim(),
+    duration: document.getElementById('ef-duration').value.trim(),
+    equipment: document.getElementById('ef-equipment').value.trim(),
+    tags: document.getElementById('ef-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    video: document.getElementById('ef-video').value.trim(),
+    videoType: document.getElementById('ef-video-type').value || null,
+    videoFileName: editorVideoFileName || '',
+    image: document.getElementById('ef-image').value.trim(),
+    cats,
+    variants: editorVariantIds.slice(),
+  };
+
+  if(editorExId){
+    const ex = getExercise(editorExId);
+    Object.assign(ex, data);
+    showToast('Ejercicio actualizado ✓');
+  } else {
+    data.id = uid('ex');
+    state.exercises.push(data);
+    editorExId = data.id;
+    showToast('Ejercicio creado ✓');
+  }
+  persist();
+  closeModal('modal-exeditor');
+  if(currentScreen==='biblioteca') renderBiblioteca();
+}
+
+function deleteCurrentExercise(){
+  if(!editorExId) return;
+  if(!confirm('¿Eliminar este ejercicio de la biblioteca?')) return;
+  // Si es un ejercicio de fábrica, recordamos el borrado para que mergeDefaults()
+  // no lo vuelva a añadir en el próximo refresco o al importar un backup.
+  if(DEFAULT_EXERCISES.some(d=>d.id===editorExId) && !state.deletedDefaults.exercises.includes(editorExId)){
+    state.deletedDefaults.exercises.push(editorExId);
+  }
+  state.exercises = state.exercises.filter(e=>e.id!==editorExId);
+  // Limpiar referencias rotas: quitar este ejercicio de las variantes de cualquier otro
+  state.exercises.forEach(e=>{ if(e.variants && e.variants.includes(editorExId)) e.variants = e.variants.filter(v=>v!==editorExId); });
+  idbDeleteHandle(editorExId).catch(()=>{});
+  if(sessionVideoUrls[editorExId]){ URL.revokeObjectURL(sessionVideoUrls[editorExId]); delete sessionVideoUrls[editorExId]; }
+  persist();
+  closeModal('modal-exeditor');
+  if(currentScreen==='biblioteca') renderBiblioteca();
+  showToast('Ejercicio eliminado');
+}
+
+/* =========================================================================
+   PROGRAMAR EJERCICIO A UNA FECHA
+   ========================================================================= */
+let schedExId = null;
+let schedRepeat = 'none';
+
+function openScheduleModal(exId){
+  closeModal('modal-exdetail');
+  schedExId = exId;
+  schedRepeat = 'none';
+  document.querySelectorAll('#modal-schedule .toggle-pill').forEach(p=>{p.classList.remove('on'); p.style.background='';p.style.borderColor='';});
+  const firstPill = document.querySelector('#modal-schedule .toggle-pill[data-rep="none"]');
+  if(firstPill){ firstPill.classList.add('on'); firstPill.style.background='var(--green)'; firstPill.style.borderColor='var(--green)'; }
+
+  document.getElementById('sched-sets').value = '';
+  document.getElementById('sched-time').value = '';
+  if(exId){
+    const ex = getExercise(exId);
+    document.getElementById('sched-exname').textContent = (ex.icon||'')+' '+ex.name;
+    document.getElementById('sched-notes').value = ex.setsReps || '';
+  } else {
+    document.getElementById('sched-exname').innerHTML = `<select class="form-select" id="sched-exselect">` +
+      state.exercises.slice().sort((a,b)=>a.name.localeCompare(b.name,'es')).map(e=>`<option value="${e.id}">${e.icon} ${e.name}</option>`).join('') + `</select>`;
+    document.getElementById('sched-notes').value = '';
+  }
+  document.getElementById('sched-date').value = (currentScreen==='calendario' && calSelectedDate) ? calSelectedDate : todayStr();
+  openModal('modal-schedule');
+}
+
+function setSchedRepeat(val){
+  schedRepeat = val;
+  document.querySelectorAll('#modal-schedule .toggle-pill').forEach(p=>{
+    const on = p.dataset.rep===val;
+    p.classList.toggle('on', on);
+    p.style.background = on ? 'var(--green)' : '';
+    p.style.borderColor = on ? 'var(--green)' : '';
+  });
+}
+
+function addScheduleItem(dateStr, exId, notes, fromPlan, blockLabel, assignId, sets, time){
+  if(!state.schedule[dateStr]) state.schedule[dateStr]=[];
+  state.schedule[dateStr].push({ id: uid('sch'), exId, notes: notes||'', sets: sets||null, done:false, fromPlan: fromPlan||null, block: blockLabel||null, assignId: assignId||null, time: time||null });
+}
+
+function confirmSchedule(){
+  const exId = schedExId || document.getElementById('sched-exselect').value;
+  const dateStr = document.getElementById('sched-date').value;
+  const notes = document.getElementById('sched-notes').value.trim();
+  const setsVal = parseInt(document.getElementById('sched-sets').value)||null;
+  const timeVal = document.getElementById('sched-time').value || null;
+  if(!exId || !dateStr){ showToast('Selecciona ejercicio y fecha'); return; }
+
+  let count = 0;
+  if(schedRepeat==='none'){ addScheduleItem(dateStr, exId, notes, null, null, null, setsVal, timeVal); count=1; }
+  else {
+    const weeks = schedRepeat==='weekly4' ? 4 : 8;
+    const base = strToDate(dateStr);
+    for(let i=0;i<weeks;i++){
+      const d = new Date(base); d.setDate(base.getDate()+7*i);
+      addScheduleItem(dateToStr(d), exId, notes, null, null, null, setsVal, timeVal);
+      count++;
+    }
+  }
+  persist();
+  closeModal('modal-schedule');
+  showToast(count>1 ? `Programado ${count} veces ✓` : 'Añadido al calendario ✓');
+  renderCurrentScreenSoft();
+  if(currentScreen==='calendario') renderCalendario();
+}
+
+/* =========================================================================
+   CALENDARIO
+   ========================================================================= */
+let calViewDate = new Date();
+let calSelectedDate = todayStr();
+
+function calChangeMonth(delta){
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth()+delta, 1);
+  renderCalendario();
+}
+function calGoToday(){
+  calViewDate = new Date();
+  calSelectedDate = todayStr();
+  renderCalendario();
+}
+
+const DOW_LABELS = ['L','M','X','J','V','S','D'];
+
+function renderCalendario(){
+  document.getElementById('cal-month-label').textContent = calViewDate.toLocaleDateString('es-ES',{month:'long', year:'numeric'});
+  document.getElementById('cal-dow-row').innerHTML = DOW_LABELS.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+
+  const year = calViewDate.getFullYear(), month = calViewDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startOffset = (firstDay.getDay()+6)%7; // Monday-first
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  let cells = [];
+  for(let i=0;i<startOffset;i++){
+    const d = daysInPrevMonth - startOffset + i + 1;
+    cells.push({d, other:true, dateObj: new Date(year, month-1, d)});
+  }
+  for(let d=1; d<=daysInMonth; d++){ cells.push({d, other:false, dateObj: new Date(year, month, d)}); }
+  while(cells.length % 7 !== 0){
+    const idx = cells.length - (startOffset+daysInMonth);
+    cells.push({d: idx+1, other:true, dateObj: new Date(year, month+1, idx+1)});
+  }
+
+  const todayS = todayStr();
+  document.getElementById('cal-grid').innerHTML = cells.map(cell=>{
+    const ds = dateToStr(cell.dateObj);
+    const items = state.schedule[ds] || [];
+    const dots = items.slice(0,4).map(it=>{
+      const ex = getExercise(it.exId);
+      const ci = ex ? catInfo(ex.cats[0]?ex.cats[0].c:'') : null;
+      const color = ci ? (CAT_COLOR[ci.color]||CAT_COLOR.gray)[0] : 'var(--gray)';
+      return `<span class="dot" style="background:${it.done?'var(--text3)':color};"></span>`;
+    }).join('') + (getTasksForDate(ds).length ? `<span class="dot" style="background:var(--blue);"></span>` : '');
+    const cls = ['cal-day'];
+    if(cell.other) cls.push('other');
+    if(ds===todayS) cls.push('today');
+    if(ds===calSelectedDate) cls.push('selected');
+    return `<div class="${cls.join(' ')}" onclick="calSelectDay('${ds}')">
+      <div>${cell.d}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }).join('');
+
+  renderCalDayPanel(calSelectedDate);
+}
+
+function calSelectDay(ds){ calSelectedDate = ds; renderCalendario(); }
+
+function renderCalDayPanel(ds){
+  const panel = document.getElementById('cal-day-panel');
+  const items = state.schedule[ds] || [];
+  const dateLabel = strToDate(ds).toLocaleDateString('es-ES',{weekday:'long', day:'numeric', month:'long'});
+  const pain = state.painLogs[ds];
+  const hasManualOrder = !!(state.dayGroupOrder && state.dayGroupOrder[ds] && state.dayGroupOrder[ds].length);
+  panel.innerHTML = `
+    <div class="cal-day-title">
+      <span style="text-transform:capitalize;">${dateLabel}</span>
+      <div style="display:flex;gap:10px;align-items:center;">
+        ${hasManualOrder?`<button class="link-btn" title="Volver a ordenar automáticamente por hora" onclick="resetGroupOrder('${ds}')">↺ Auto</button>`:''}
+        <button class="link-btn" onclick="openTaskForm(null, '${ds}')">+ Tarea</button>
+        <button class="link-btn" onclick="openScheduleModal(null)">+ Añadir</button>
+      </div>
+    </div>
+    ${renderPlannedListInline(ds, items)}
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:12.5px;font-weight:700;color:var(--text2);">Registro de lesiones</div>
+        <button class="link-btn" onclick="openPainLogModal('${ds}')">${pain?'Editar':'Registrar'}</button>
+      </div>
+      ${pain ? `<div class="pain-row" style="padding:0;overflow-x:visible;flex-wrap:wrap;">` + INJURY_KEYS.map(k=>
+        `<div class="pain-chip" style="min-width:70px;"><div class="pl">${k.label}</div><div class="pain-num" style="color:${painColor(pain[k.id])}">${pain[k.id]??'—'}</div></div>`
+      ).join('') + `</div>${pain.notes?`<div style="font-size:12.5px;color:var(--text2);margin-top:8px;line-height:1.4;">${pain.notes}</div>`:''}` : `<div style="font-size:12.5px;color:var(--text3);">Sin registro este día.</div>`}
+    </div>
+  `;
+}
+
+/* =========================================================================
+   TAREAS (puntuales y recurrentes) — aparecen intercaladas con los programas
+   en el Calendario, ordenadas también por hora.
+   ========================================================================= */
+
+// ¿Esta tarea "toca" en esta fecha concreta? Puntual: solo su fecha exacta.
+// Recurrente: según su frecuencia (diario/semanal/mensual/anual), respetando
+// fecha de inicio/fin opcionales.
+function taskOccursOnDate(task, dateStr){
+  if(!task || task.archived) return false;
+  if(task.kind==='puntual') return task.date===dateStr;
+  const d = strToDate(dateStr);
+  if(task.startDate){ const start = strToDate(task.startDate); if(d<start) return false; }
+  if(task.endDate){ const end = strToDate(task.endDate); if(d>end) return false; }
+  if(task.freq==='diario'){
+    const every = Math.max(1, task.every||1);
+    if(!task.startDate || every<=1) return true;
+    const start = strToDate(task.startDate);
+    const diffDays = Math.round((d-start)/86400000);
+    return diffDays>=0 && diffDays % every === 0;
+  }
+  if(task.freq==='semanal'){
+    const dayName = WEEKDAY_ES[(d.getDay()+6)%7];
+    return (task.weekdays||[]).includes(dayName);
+  }
+  if(task.freq==='mensual'){
+    const dim = daysInMonthOf(d.getFullYear(), d.getMonth());
+    const targetDay = Math.min(task.monthDay||1, dim);
+    return d.getDate()===targetDay;
+  }
+  if(task.freq==='anual'){
+    if((d.getMonth()+1)!==(task.annualMonth||1)) return false;
+    const dim = daysInMonthOf(d.getFullYear(), d.getMonth());
+    const targetDay = Math.min(task.annualDay||1, dim);
+    return d.getDate()===targetDay;
+  }
+  return false;
+}
+
+// Todas las tareas que tocan en una fecha, con su estado "hecho" para ese día concreto,
+// ordenadas por hora (las que no tienen hora van al final).
+function getTasksForDate(dateStr){
+  return (state.tasks||[])
+    .filter(t=>taskOccursOnDate(t, dateStr))
+    .map(t=>({ task:t, done: !!(state.taskDone && state.taskDone[dateStr] && state.taskDone[dateStr][t.id]) }))
+    .sort((a,b)=>(a.task.time||'99:99').localeCompare(b.task.time||'99:99'));
+}
+
+function toggleTaskDone(taskId, dateStr){
+  if(!state.taskDone) state.taskDone = {};
+  if(!state.taskDone[dateStr]) state.taskDone[dateStr] = {};
+  state.taskDone[dateStr][taskId] = !state.taskDone[dateStr][taskId];
+  persist();
+  renderCurrentScreenSoft();
+}
+
+const TASK_WEEKDAY_SHORT = {'Lunes':'L','Martes':'M','Miércoles':'X','Jueves':'J','Viernes':'V','Sábado':'S','Domingo':'D'};
+let taskFormKind = 'puntual';
+let taskFormFreq = 'diario';
+let taskFormWeekdays = [];
+
+function openTaskForm(taskId, presetDate){
+  const task = taskId ? (state.tasks||[]).find(t=>t.id===taskId) : null;
+  document.getElementById('task-form-title').textContent = task ? 'Editar tarea' : 'Nueva tarea';
+  document.getElementById('task-id').value = task ? task.id : '';
+  document.getElementById('task-title').value = task ? task.title : '';
+  document.getElementById('task-notes').value = task ? (task.notes||'') : '';
+  document.getElementById('task-time').value = task ? (task.time||'') : '';
+  document.getElementById('task-date').value = (task && task.kind==='puntual') ? task.date : (presetDate || todayStr());
+  document.getElementById('task-every-diario').value = (task && task.freq==='diario') ? (task.every||1) : 1;
+  document.getElementById('task-monthday').value = (task && task.freq==='mensual') ? (task.monthDay||1) : '';
+  document.getElementById('task-annual-day').value = (task && task.freq==='anual') ? (task.annualDay||1) : '';
+  document.getElementById('task-annual-month').value = (task && task.freq==='anual') ? (task.annualMonth||1) : 1;
+  document.getElementById('task-start-date').value = task ? (task.startDate||'') : '';
+  document.getElementById('task-end-date').value = task ? (task.endDate||'') : '';
+  taskFormWeekdays = (task && task.weekdays) ? task.weekdays.slice() : [];
+  renderTaskWeekdaysRow();
+  setTaskKind(task ? task.kind : 'puntual');
+  setTaskFreq((task && task.freq) ? task.freq : 'diario');
+  document.getElementById('task-delete-btn').style.display = task ? '' : 'none';
+  openModal('modal-taskform');
+}
+
+function setTaskKind(kind){
+  taskFormKind = kind;
+  document.querySelectorAll('#task-kind-row .toggle-pill').forEach(p=>{
+    const on = p.dataset.kind===kind;
+    p.classList.toggle('on', on);
+    p.style.background = on ? 'var(--text)' : ''; p.style.borderColor = on ? 'var(--text)' : '';
+  });
+  document.getElementById('task-puntual-fields').style.display = kind==='puntual' ? '' : 'none';
+  document.getElementById('task-recurrente-fields').style.display = kind==='recurrente' ? '' : 'none';
+}
+
+function setTaskFreq(freq){
+  taskFormFreq = freq;
+  document.querySelectorAll('#task-freq-row .toggle-pill').forEach(p=>{
+    const on = p.dataset.freq===freq;
+    p.classList.toggle('on', on);
+    p.style.background = on ? 'var(--text)' : ''; p.style.borderColor = on ? 'var(--text)' : '';
+  });
+  ['diario','semanal','mensual','anual'].forEach(f=>{
+    document.getElementById('task-freq-'+f).style.display = (f===freq) ? '' : 'none';
+  });
+}
+
+function renderTaskWeekdaysRow(){
+  document.getElementById('task-weekdays-row').innerHTML = WEEKDAY_ES.map(d=>{
+    const on = taskFormWeekdays.includes(d);
+    return `<div class="toggle-pill ${on?'on':''}" style="${on?'background:var(--text);border-color:var(--text);':''}" onclick="toggleTaskWeekday('${d}')">${TASK_WEEKDAY_SHORT[d]}</div>`;
+  }).join('');
+}
+function toggleTaskWeekday(d){
+  const idx = taskFormWeekdays.indexOf(d);
+  if(idx>=0) taskFormWeekdays.splice(idx,1); else taskFormWeekdays.push(d);
+  renderTaskWeekdaysRow();
+}
+
+function saveTaskForm(){
+  const title = document.getElementById('task-title').value.trim();
+  if(!title){ showToast('Ponle un título a la tarea'); return; }
+  const id = document.getElementById('task-id').value || uid('task');
+  const notes = document.getElementById('task-notes').value.trim();
+  const time = document.getElementById('task-time').value || null;
+  const task = { id, title, notes, time, kind: taskFormKind, archived:false };
+
+  if(taskFormKind==='puntual'){
+    const date = document.getElementById('task-date').value;
+    if(!date){ showToast('Elige una fecha'); return; }
+    task.date = date;
+  } else {
+    task.freq = taskFormFreq;
+    task.startDate = document.getElementById('task-start-date').value || null;
+    task.endDate = document.getElementById('task-end-date').value || null;
+    if(taskFormFreq==='diario'){
+      task.every = Math.max(1, parseInt(document.getElementById('task-every-diario').value)||1);
+    } else if(taskFormFreq==='semanal'){
+      if(!taskFormWeekdays.length){ showToast('Elige al menos un día de la semana'); return; }
+      task.weekdays = taskFormWeekdays.slice();
+    } else if(taskFormFreq==='mensual'){
+      const md = parseInt(document.getElementById('task-monthday').value);
+      if(!md || md<1 || md>31){ showToast('Día del mes no válido (1-31)'); return; }
+      task.monthDay = md;
+    } else if(taskFormFreq==='anual'){
+      const ad = parseInt(document.getElementById('task-annual-day').value);
+      const am = parseInt(document.getElementById('task-annual-month').value);
+      if(!ad || ad<1 || ad>31){ showToast('Día no válido (1-31)'); return; }
+      task.annualDay = ad; task.annualMonth = am;
+    }
+  }
+
+  if(!state.tasks) state.tasks = [];
+  const existingIdx = state.tasks.findIndex(t=>t.id===id);
+  if(existingIdx>=0) state.tasks[existingIdx] = task; else state.tasks.push(task);
+  persist();
+  closeModal('modal-taskform');
+  if(currentScreen==='tareas') renderTareas();
+  if(currentScreen==='calendario') renderCalendario();
+  if(currentScreen==='dashboard') renderDashboard();
+  showToast(existingIdx>=0 ? 'Tarea actualizada' : 'Tarea creada');
+}
+
+function deleteCurrentTask(){
+  const id = document.getElementById('task-id').value;
+  if(!id) return;
+  if(!confirm('¿Eliminar esta tarea? Desaparecerá de todas las fechas (pasadas y futuras).')) return;
+  state.tasks = (state.tasks||[]).filter(t=>t.id!==id);
+  Object.keys(state.taskDone||{}).forEach(ds=>{ if(state.taskDone[ds]) delete state.taskDone[ds][id]; });
+  persist();
+  closeModal('modal-taskform');
+  if(currentScreen==='tareas') renderTareas();
+  if(currentScreen==='calendario') renderCalendario();
+  if(currentScreen==='dashboard') renderDashboard();
+  showToast('Tarea eliminada');
+}
+
+function describeTaskSchedule(t){
+  const timePart = t.time ? ` · 🕐 ${t.time}` : '';
+  if(t.kind==='puntual'){
+    const d = strToDate(t.date);
+    return `📌 ${d.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}${timePart}`;
+  }
+  if(t.freq==='diario') return `🔁 ${(t.every||1)>1?`Cada ${t.every} días`:'Todos los días'}${timePart}`;
+  if(t.freq==='semanal') return `🔁 ${(t.weekdays||[]).map(d=>TASK_WEEKDAY_SHORT[d]).join(' ')}${timePart}`;
+  if(t.freq==='mensual') return `🔁 Día ${t.monthDay} de cada mes${timePart}`;
+  if(t.freq==='anual'){
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `🔁 ${t.annualDay} de ${meses[(t.annualMonth||1)-1]}, cada año${timePart}`;
+  }
+  return '';
+}
+
+function renderTareas(){
+  const list = document.getElementById('tasks-list');
+  const tasks = (state.tasks||[]).filter(t=>!t.archived);
+  if(!tasks.length){
+    list.innerHTML = `<div style="padding:20px 16px;color:var(--text3);font-size:13.5px;">No tienes tareas todavía. Toca el botón + para crear la primera.</div>`;
+    return;
+  }
+  const recurrentes = tasks.filter(t=>t.kind==='recurrente');
+  const puntuales = tasks.filter(t=>t.kind==='puntual').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+
+  const renderRow = (t)=>`
+    <div class="planned-item" style="cursor:pointer;" onclick="openTaskForm('${t.id}')">
+      <div class="planned-body">
+        <div class="planned-name">✅ ${t.title}</div>
+        <div class="planned-sub">${describeTaskSchedule(t)}</div>
+      </div>
+    </div>`;
+
+  list.innerHTML = `
+    <div class="px">
+      ${recurrentes.length?`<div style="font-size:12.5px;font-weight:800;color:var(--text2);margin:14px 0 6px;">🔁 Recurrentes</div>${recurrentes.map(renderRow).join('')}`:''}
+      ${puntuales.length?`<div style="font-size:12.5px;font-weight:800;color:var(--text2);margin:18px 0 6px;">📌 Puntuales</div>${puntuales.map(renderRow).join('')}`:''}
+    </div>
+  `;
+}
+
+
+// Clave/etiqueta de agrupación por "programa de origen" (no por bloque). Los ejercicios
+// añadidos a mano (sin plan) se agrupan aparte bajo una etiqueta genérica.
+function groupKeyForItem(it){ return it.fromPlan || '__manual__'; }
+function groupLabelForItem(it){
+  if(!it.fromPlan) return '📌 Añadidos manualmente';
+  const plan = findPlan(it.fromPlan);
+  return plan ? plan.name : 'Programa eliminado';
+}
+
+// Calcula los metadatos (hora mínima) de cada "grupo" del día: un grupo por programa
+// de origen, uno para los ejercicios sueltos, uno por cada tarea CON hora (para que se
+// intercale individualmente en la línea de tiempo), y uno único para las tareas SIN hora
+// (que siempre se ordena al principio del día, con hora interna ficticia '00:00').
+function buildGroupMeta(dateStr){
+  const items = state.schedule[dateStr] || [];
+  const meta = {};
+  items.forEach(item=>{
+    const k = groupKeyForItem(item);
+    if(!meta[k]) meta[k] = {minTime:null};
+    if(item.time && (!meta[k].minTime || item.time < meta[k].minTime)) meta[k].minTime = item.time;
+  });
+  getTasksForDate(dateStr).forEach(({task})=>{
+    if(task.time){
+      meta['__task__'+task.id] = {minTime: task.time};
+    } else if(!meta['__tasks_notime__']){
+      meta['__tasks_notime__'] = {minTime: '00:00'};
+    }
+  });
+  return meta;
+}
+
+// Calcula el orden de grupos (programas + tareas) para un día.
+// Por defecto, ordena por la hora sugerida más temprana de cada grupo (definida en el
+// bloque del programa, al programar manualmente, o en la propia tarea); los grupos sin
+// hora van al final, en orden de aparición. Si el usuario ha reordenado manualmente ese
+// día concreto (con las flechas ▲▼), ese orden manual guardado en state.dayGroupOrder[dateStr]
+// tiene prioridad absoluta para ese día (hasta que se restablezca el orden automático).
+function computeGroupOrder(dateStr, groupMeta){
+  const naturalOrder = Object.keys(groupMeta);
+  const savedOrder = (state.dayGroupOrder && state.dayGroupOrder[dateStr]) || [];
+  if(savedOrder.length){
+    const orderedKeys = savedOrder.filter(k=>groupMeta[k]);
+    naturalOrder.forEach(k=>{ if(!orderedKeys.includes(k)) orderedKeys.push(k); });
+    return orderedKeys;
+  }
+  const timed = naturalOrder.filter(k=>groupMeta[k].minTime).sort((a,b)=>groupMeta[a].minTime.localeCompare(groupMeta[b].minTime));
+  const untimed = naturalOrder.filter(k=>!groupMeta[k].minTime);
+  return [...timed, ...untimed];
+}
+
+function moveScheduleGroup(dateStr, key, dir){
+  const groupMeta = buildGroupMeta(dateStr);
+  const orderedKeys = computeGroupOrder(dateStr, groupMeta);
+  const idx = orderedKeys.indexOf(key);
+  const newIdx = idx + dir;
+  if(idx<0 || newIdx<0 || newIdx>=orderedKeys.length) return;
+  [orderedKeys[idx], orderedKeys[newIdx]] = [orderedKeys[newIdx], orderedKeys[idx]];
+  if(!state.dayGroupOrder) state.dayGroupOrder = {};
+  state.dayGroupOrder[dateStr] = orderedKeys;
+  persist();
+  renderCurrentScreenSoft();
+}
+
+// Quita el orden manual guardado para ese día y vuelve a ordenar automáticamente por hora.
+function resetGroupOrder(dateStr){
+  if(state.dayGroupOrder) delete state.dayGroupOrder[dateStr];
+  persist();
+  renderCurrentScreenSoft();
+}
+
+// Grupos (programas) expandidos manualmente en la vista de calendario. Por defecto
+// todos los grupos aparecen colapsados (solo cabecera); solo viven en memoria (no se
+// persisten), así que cada vez que abres la app empiezas viendo el día "resumido".
+let calExpandedGroups = {};
+function calGroupCollapseKey(dateStr, key){ return dateStr+'::'+key; }
+function toggleCalGroupCollapse(dateStr, key){
+  const k = calGroupCollapseKey(dateStr, key);
+  calExpandedGroups[k] = !calExpandedGroups[k];
+  renderCurrentScreenSoft();
+}
+
+function renderPlannedListInline(dateStr, items){
+  const dayTasks = getTasksForDate(dateStr);
+  if((!items || !items.length) && !dayTasks.length){
+    return `<div style="font-size:13px;color:var(--text3);padding:6px 0;">Nada programado.</div>`;
+  }
+
+  // 1. Agrupar por programa de origen, preservando el orden real (insertion order),
+  //    nunca alfabético: así el orden coincide con el que definiste en el programa.
+  const planGroups = {};
+  (items||[]).forEach(item=>{
+    const key = groupKeyForItem(item);
+    if(!planGroups[key]) planGroups[key] = { label: groupLabelForItem(item), items: [] };
+    planGroups[key].items.push(item);
+  });
+
+  // Tareas con hora -> su propia "fila suelta" (se intercalan en la línea de tiempo).
+  // Tareas sin hora -> se agrupan en un único bloque que siempre va al principio.
+  const timedTaskMap = {};
+  const notimeTasks = [];
+  dayTasks.forEach(entry=>{
+    if(entry.task.time) timedTaskMap['__task__'+entry.task.id] = entry;
+    else notimeTasks.push(entry);
+  });
+
+  const groupMeta = buildGroupMeta(dateStr);
+  const orderedKeys = computeGroupOrder(dateStr, groupMeta);
+  const onlyOneGroup = orderedKeys.length <= 1;
+
+  const renderItem = (item)=>{
+    const ex = getExercise(item.exId);
+    if(!ex) return '';
+    return `<div class="planned-item">
+      <div class="planned-check ${item.done?'done':''}" onclick="toggleScheduleItem('${dateStr}','${item.id}')">${item.done?'✓':''}</div>
+      <div class="planned-body" onclick="openExerciseDetail('${ex.id}','${dateStr}','${item.id}')">
+        <div class="planned-name ${item.done?'done':''}">${ex.icon} ${ex.name}</div>
+        <div class="planned-sub">${formatItemNotes(item)}</div>
+      </div>
+      <button class="planned-rm" onclick="removeScheduleItem('${dateStr}','${item.id}')">✕</button>
+    </div>`;
+  };
+
+  const renderTaskRow = ({task, done})=>{
+    const timePart = task.time ? `🕐 ${task.time}` : '';
+    const sub = [timePart, task.notes||''].filter(Boolean).join(' · ');
+    return `<div class="planned-item">
+      <div class="planned-check ${done?'done':''}" onclick="toggleTaskDone('${task.id}','${dateStr}')">${done?'✓':''}</div>
+      <div class="planned-body" style="cursor:pointer;" onclick="openTaskForm('${task.id}')">
+        <div class="planned-name ${done?'done':''}">${task.icon||'✅'} ${task.title}</div>
+        <div class="planned-sub">${sub}</div>
+      </div>
+    </div>`;
+  };
+
+  return orderedKeys.map((key, idx)=>{
+    // Tarea individual con hora: fila suelta, sin cabecera ni colapso, ya intercalada
+    // en su posición correcta según computeGroupOrder.
+    if(timedTaskMap[key]) return renderTaskRow(timedTaskMap[key]);
+
+    let blocksHtml, label, doneCount, totalCount;
+    const isTasksBucket = key==='__tasks_notime__';
+
+    if(isTasksBucket){
+      blocksHtml = notimeTasks.map(renderTaskRow).join('');
+      label = 'Tareas';
+      doneCount = notimeTasks.filter(x=>x.done).length;
+      totalCount = notimeTasks.length;
+    } else {
+      const grp = planGroups[key];
+      // 2. Dentro de cada programa, sub-agrupar por bloque respetando también el orden
+      //    de inserción (que es el orden real de tu programa: Calentamiento, Fuerza, Rehab...).
+      const blockGroups = {};
+      const blockOrder = [];
+      grp.items.forEach(it=>{
+        const bKey = it.block || '';
+        if(!blockGroups[bKey]){ blockGroups[bKey]=[]; blockOrder.push(bKey); }
+        blockGroups[bKey].push(it);
+      });
+      blocksHtml = (blockOrder.length===1 && blockOrder[0]==='')
+        ? blockGroups[''].map(renderItem).join('')
+        : blockOrder.map(bKey=>`
+            ${bKey?`<div style="font-size:11.5px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin:10px 0 4px;">${bKey}</div>`:''}
+            ${blockGroups[bKey].map(renderItem).join('')}
+          `).join('');
+      label = grp.label;
+      doneCount = grp.items.filter(it=>it.done).length;
+      totalCount = grp.items.length;
+    }
+
+    if(onlyOneGroup) return blocksHtml;
+
+    const isFirst = idx===0, isLast = idx===orderedKeys.length-1;
+    // El bloque de tareas sin hora usa '00:00' internamente solo para ordenar el primero;
+    // no es una hora real, así que no se muestra como insignia.
+    const minTime = groupMeta[key].minTime;
+    const timeBadge = (minTime && !isTasksBucket) ? `<span style="font-size:11px;font-weight:700;color:var(--text3);margin-left:6px;">🕐 ${minTime}</span>` : '';
+    const countLabel = `${doneCount}/${totalCount}`;
+    const isExpanded = !!calExpandedGroups[calGroupCollapseKey(dateStr, key)];
+    const header = `
+      <div style="display:flex;align-items:center;gap:6px;margin:${isFirst?'0':'16px'} 0 4px;padding-top:${isFirst?'0':'10px'};${isFirst?'':'border-top:1px solid var(--border);'}cursor:pointer;" onclick="toggleCalGroupCollapse('${dateStr}','${key}')">
+        <div style="font-size:11px;color:var(--text3);width:12px;flex-shrink:0;">${isExpanded?'▾':'▸'}</div>
+        <div style="font-size:13px;font-weight:800;color:var(--text);flex:1;">${isTasksBucket?'✅':'🗂️'} ${label}${timeBadge}</div>
+        <div style="font-size:11px;color:var(--text3);flex-shrink:0;">${countLabel}</div>
+        <button class="btn-icon-sm" title="Subir" ${isFirst?'disabled':''} style="${isFirst?'opacity:.3;':''}" onclick="event.stopPropagation();moveScheduleGroup('${dateStr}','${key}',-1)">▲</button>
+        <button class="btn-icon-sm" title="Bajar" ${isLast?'disabled':''} style="${isLast?'opacity:.3;':''}" onclick="event.stopPropagation();moveScheduleGroup('${dateStr}','${key}',1)">▼</button>
+      </div>
+    `;
+    return header + (isExpanded ? blocksHtml : '');
+  }).join('');
+}
+
+/* ---------- PAIN LOG ---------- */
+let painLogDate = null;
+function openPainLogModal(ds){
+  painLogDate = ds;
+  const existing = state.painLogs[ds] || {};
+  document.getElementById('painlog-inputs').innerHTML = INJURY_KEYS.map(k=>`
+    <div class="pain-input">
+      <label>${k.label}</label>
+      <input type="number" min="0" max="10" id="pl-${k.id}" value="${existing[k.id]??''}">
+    </div>`).join('');
+  document.getElementById('painlog-notes').value = existing.notes || '';
+  openModal('modal-painlog');
+}
+function savePainLog(){
+  const values = {};
+  INJURY_KEYS.forEach(k=>{
+    const v = document.getElementById('pl-'+k.id).value;
+    values[k.id] = v===''? null : Math.max(0,Math.min(10, parseInt(v)));
+  });
+  values.notes = document.getElementById('painlog-notes').value.trim();
+  state.painLogs[painLogDate] = values;
+  persist();
+  closeModal('modal-painlog');
+  showToast('Registro guardado ✓');
+  renderCurrentScreenSoft();
+  if(currentScreen==='calendario') renderCalendario();
+}
+
+/* =========================================================================
+   PLANES / PROGRAMAS
+   ========================================================================= */
+function renderPlanes(){
+  const all = findAllPlans();
+  document.getElementById('plans-list').innerHTML = all.map(renderPlanCard).join('') +
+    `<div style="padding:6px 16px 20px;"><button class="btn btn-secondary btn-block" onclick="openNewPlanModal()">+ Crear programa propio</button></div>`;
+  renderAssignmentsList();
+}
+
+function renderAssignmentsList(){
+  const el = document.getElementById('assignments-section');
+  if(!el) return;
+  const batches = getAssignmentBatches();
+  if(!batches.length){ el.innerHTML=''; return; }
+  el.innerHTML = `
+    <div style="padding:0 16px;margin-bottom:6px;">
+      <div style="font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;">📋 Programaciones en el calendario</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:2px;">Si te equivocaste de fecha o semanas, bórrala aquí entera sin ir día a día.</div>
+    </div>
+    ${batches.map(b=>`
+      <div class="plan-card" style="margin:8px 16px;">
+        <div class="plan-card-top">
+          <div class="plan-card-title">${b.planName} ${b.cyclic?`<span class="badge" style="background:var(--green-light);color:var(--green-dark);">🔁 Cíclico${b.cycleLimit?' · '+b.cyclesGenerated+'/'+b.cycleLimit:''}</span>`:''}</div>
+          <div class="plan-card-sub">${fmtDateShort(b.startDate)} → ${fmtDateShort(b.endDate)}${b.weeks?(' · '+b.weeks+' semana'+(b.weeks===1?'':'s')+'/ciclo'):''} · ${b.count} ejercicio${b.count===1?'':'s'}</div>
+        </div>
+        <div class="plan-card-actions">
+          ${b.legacy?'':`<button class="btn btn-secondary" style="flex:1;" onclick="toggleAssignmentCyclic('${b.id}')">${b.cyclic?'🔁 Editar ciclo':'🔁 Hacer cíclico'}</button>`}
+          <button class="btn btn-secondary" style="flex:1;" onclick="deleteAssignmentBatch('${b.id}', ${b.legacy?'true':'false'}, '${b.legacyPlanId||''}')">🗑️ Eliminar esta programación</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderPlanCard(plan){
+  const days = plan.days || {};
+  const dayKeys = Object.keys(days);
+  const isCustom = !!state.customPlans.find(p=>p.id===plan.id);
+  return `<div class="plan-card">
+    <div class="plan-card-top" onclick="openPlanDetail('${plan.id}')" style="cursor:pointer;">
+      <div class="plan-card-title">${plan.name}</div>
+      <div class="plan-card-sub">${plan.weeks?('Semanas '+plan.weeks+' · '):''}${dayKeys.length} día${dayKeys.length===1?'':'s'} programados${isCustom?' · Propio':''}</div>
+      <div class="plan-card-desc">${plan.desc||''}</div>
+    </div>
+    <div class="plan-day-pills hscroll">${dayKeys.map(k=>`<div class="plan-day-pill">${k}</div>`).join('')}</div>
+    <div class="plan-card-actions">
+      <button class="btn btn-secondary" style="flex:1;" onclick="openPlanDetail('${plan.id}')">Ver detalle</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="openPlanDetail('${plan.id}');setTimeout(()=>openAssignPlanModal(),50);">📅 Programar</button>
+    </div>
+  </div>`;
+}
+
+let currentPlanId = null;
+function openPlanDetail(planId){
+  currentPlanId = planId;
+  const plan = findPlan(planId);
+  if(!plan) return;
+  document.getElementById('plan-title').textContent = plan.name;
+  document.getElementById('plan-desc').textContent = plan.desc || '';
+  const dayKeys = Object.keys(plan.days||{});
+  const orderedDays = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].filter(d=>dayKeys.includes(d)).concat(dayKeys.filter(d=>!['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].includes(d)));
+  document.getElementById('plan-days-detail').innerHTML = orderedDays.map(dayName=>{
+    const day = plan.days[dayName];
+    const blocks = day.blocks || [];
+    const blocksHtml = blocks.map((blk, bIdx)=>{
+      const itemsHtml = (blk.items||[]).map((it,idx)=>{
+        const ex = getExercise(it.exId);
+        if(!ex) return '';
+        return `<div class="planned-item">
+          <div class="planned-body" onclick="openExerciseDetail('${ex.id}')">
+            <div class="planned-name">${ex.icon} ${ex.name}</div>
+            <div class="planned-sub">${formatItemNotes(it)}</div>
+          </div>
+          <button class="link-btn" style="font-size:12px;flex-shrink:0;" onclick="event.stopPropagation();editPlanItemSets('${dayName}',${bIdx},${idx})">✏️</button>
+          <button class="planned-rm" onclick="removeFromPlanDay('${dayName}',${bIdx},${idx})">✕</button>
+        </div>`;
+      }).join('') || `<div style="font-size:12px;color:var(--text3);padding:4px 0 4px 4px;">Sin ejercicios en este bloque.</div>`;
+      return `<div style="margin:8px 0 12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px;">
+          <div style="font-size:12.5px;font-weight:800;color:var(--text2);flex:1;">${blk.label||'Bloque'}</div>
+          <input type="time" class="form-input" title="Hora sugerida (para ordenar el calendario)" value="${blk.time||''}" style="width:92px;font-size:12px;padding:4px 6px;flex-shrink:0;" onchange="setPlanBlockTime('${dayName}',${bIdx}, this.value)">
+          <button class="link-btn" style="font-size:12px;" onclick="openAddToPlanDay('${dayName}',${bIdx})">+ Añadir</button>
+          <button class="link-btn" style="font-size:12px;" onclick="renamePlanBlock('${dayName}',${bIdx})">✏️</button>
+          <button class="link-btn" style="font-size:12px;color:var(--coral);" onclick="deletePlanBlock('${dayName}',${bIdx})">🗑️</button>
+        </div>
+        ${itemsHtml}
+      </div>`;
+    }).join('') || `<div style="font-size:12.5px;color:var(--text3);padding:6px 0;">Sin bloques en este día.</div>`;
+
+    return `<div style="margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:14.5px;font-weight:800;">${dayName} <span style="font-weight:500;color:var(--text3);font-size:12px;">· ${day.label||''}</span></div>
+        <button class="link-btn" onclick="openAddBlockToDay('${dayName}')">+ Bloque</button>
+      </div>
+      ${blocksHtml}
+    </div>`;
+  }).join('');
+
+  openModal('modal-plandetail');
+}
+
+function openAddBlockToDay(dayName){
+  const label = prompt('Nombre del bloque (ej: Bloque Mañana, Bloque Box, Bloque Piscina):');
+  if(!label) return;
+  const plan = findPlan(currentPlanId);
+  if(!plan.days[dayName].blocks) plan.days[dayName].blocks = [];
+  plan.days[dayName].blocks.push({label, time: null, items:[]});
+  persist();
+  openPlanDetail(currentPlanId);
+}
+
+// Se llama desde el <input type="time"> visible en la cabecera de cada bloque del programa.
+function setPlanBlockTime(dayName, blockIdx, value){
+  const plan = findPlan(currentPlanId);
+  const blk = plan.days[dayName].blocks[blockIdx];
+  if(!blk) return;
+  blk.time = value || null;
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  refreshScheduleViewsAfterSync();
+  // No hace falta re-renderizar todo el modal: el propio input ya muestra el valor guardado.
+}
+
+function renamePlanBlock(dayName, blockIdx){
+  const plan = findPlan(currentPlanId);
+  const blk = plan.days[dayName].blocks[blockIdx];
+  const label = prompt('Nuevo nombre del bloque:', blk.label||'');
+  if(!label || !label.trim()) return;
+  blk.label = label.trim();
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  openPlanDetail(currentPlanId);
+  refreshScheduleViewsAfterSync();
+}
+
+function deletePlanBlock(dayName, blockIdx){
+  const plan = findPlan(currentPlanId);
+  const blk = plan.days[dayName].blocks[blockIdx];
+  const n = (blk.items||[]).length;
+  if(!confirm(`¿Eliminar el bloque "${blk.label||'Bloque'}"${n?` y sus ${n} ejercicio(s)`:''}?`)) return;
+  plan.days[dayName].blocks.splice(blockIdx,1);
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  openPlanDetail(currentPlanId);
+  refreshScheduleViewsAfterSync();
+}
+
+/* ---------- EDITAR / ELIMINAR PROGRAMA COMPLETO ---------- */
+function openEditPlanModal(){
+  const plan = findPlan(currentPlanId);
+  if(!plan) return;
+  document.getElementById('ep-name').value = plan.name || '';
+  document.getElementById('ep-weeks').value = plan.weeks || '';
+  document.getElementById('ep-desc').value = plan.desc || '';
+  openModal('modal-editplan');
+}
+
+function saveEditPlan(){
+  const plan = findPlan(currentPlanId);
+  if(!plan) return;
+  const name = document.getElementById('ep-name').value.trim();
+  if(!name){ showToast('Ponle un nombre al programa'); return; }
+  plan.name = name;
+  plan.weeks = document.getElementById('ep-weeks').value.trim();
+  plan.desc = document.getElementById('ep-desc').value.trim();
+  persist();
+  closeModal('modal-editplan');
+  openPlanDetail(currentPlanId);
+  renderPlanes();
+  showToast('Programa actualizado ✓');
+}
+
+function deleteCurrentPlan(){
+  const plan = findPlan(currentPlanId);
+  if(!plan) return;
+  if(!confirm(`¿Eliminar el programa "${plan.name}" por completo? También se eliminarán los ejercicios programados desde este plan en el calendario.`)) return;
+  
+  // Si es un plan de fábrica (Fase 1/2/3), recordamos el borrado para que
+  // mergeDefaults() no lo vuelva a añadir en el próximo refresco o al importar un backup.
+  if(DEFAULT_PROGRAMS.some(d=>d.id===plan.id) && !state.deletedDefaults.programs.includes(plan.id)){
+    state.deletedDefaults.programs.push(plan.id);
+  }
+  // Borrar el plan
+  state.programs = state.programs.filter(p=>p.id!==plan.id);
+  state.customPlans = state.customPlans.filter(p=>p.id!==plan.id);
+  
+  // Limpiar ejercicios en el calendario que vinieron de este plan
+  Object.keys(state.schedule).forEach(dateStr=>{
+    state.schedule[dateStr] = state.schedule[dateStr].filter(item => item.fromPlan !== plan.id);
+    if(!state.schedule[dateStr].length) delete state.schedule[dateStr];
+  });
+  
+  persist();
+  closeModal('modal-plandetail');
+  renderPlanes();
+  if(currentScreen==='calendario') renderCalendario();
+  showToast('Programa y ejercicios asociados eliminados');
+}
+
+const DAY_NAME_TO_OFFSET = {'Lunes':0,'Martes':1,'Miércoles':2,'Jueves':3,'Viernes':4,'Sábado':5,'Domingo':6};
+
+// Rellena en el calendario "weeks" semanas del plan, empezando en el lunes "mondayDate",
+// todas bajo el mismo assignId (así se pueden borrar/identificar como un único lote,
+// aunque hayan sido generadas en distintos momentos por el ciclado automático).
+function fillPlanCycle(plan, mondayDate, weeks, assignId){
+  let count=0, firstDs=null, lastDs=null;
+  for(let w=0; w<weeks; w++){
+    Object.keys(plan.days).forEach(dayName=>{
+      const offset = DAY_NAME_TO_OFFSET[dayName];
+      if(offset===undefined) return;
+      const d = new Date(mondayDate); d.setDate(mondayDate.getDate() + w*7 + offset);
+      const ds = dateToStr(d);
+      if(!firstDs || ds<firstDs) firstDs=ds;
+      if(!lastDs || ds>lastDs) lastDs=ds;
+      (plan.days[dayName].blocks||[]).forEach(blk=>{
+        (blk.items||[]).forEach(it=>{
+          addScheduleItem(ds, it.exId, it.notes, plan.id, blk.label, assignId, it.sets, blk.time);
+          count++;
+        });
+      });
+    });
+  }
+  return {count, firstDs, lastDs};
+}
+
+// Cuando se edita un plan (añadir/quitar ejercicios, renombrar o borrar bloques,
+// cambiar series/notas/hora...), los días YA programados en el calendario habían
+// quedado como una "foto fija" del plan en el momento de asignarlo, así que no se
+// enteraban del cambio. Esta función recorre el calendario y regenera, para cada
+// asignación de este plan, los ejercicios de los días de HOY en adelante que aún
+// no se han marcado como hechos — usando siempre el contenido actual del plan.
+// El pasado y lo ya completado nunca se tocan, para no reescribir el historial.
+function syncPlanToFutureSchedule(planId){
+  const plan = findPlan(planId);
+  if(!plan) return;
+  const today = todayStr();
+  Object.keys(state.schedule).forEach(ds=>{
+    if(ds < today) return; // no tocar el historial
+    const items = state.schedule[ds] || [];
+    const assignIds = [...new Set(items.filter(it=>it.fromPlan===plan.id).map(it=>it.assignId))];
+    if(!assignIds.length) return;
+    const dayName = WEEKDAY_ES[(strToDate(ds).getDay()+6)%7];
+    const blocks = (plan.days[dayName] && plan.days[dayName].blocks) || [];
+    assignIds.forEach(assignId=>{
+      // quitar solo los pendientes (no hechos) de este plan+asignación en este día
+      state.schedule[ds] = (state.schedule[ds]||[]).filter(it=> !(it.fromPlan===plan.id && it.assignId===assignId && !it.done));
+      // volver a generarlos a partir del contenido actual del plan
+      blocks.forEach(blk=>{
+        (blk.items||[]).forEach(it=>{
+          addScheduleItem(ds, it.exId, it.notes, plan.id, blk.label, assignId, it.sets, blk.time);
+        });
+      });
+    });
+    if(!state.schedule[ds] || !state.schedule[ds].length) delete state.schedule[ds];
+  });
+}
+
+// Refresca calendario/dashboard si están visibles, tras sincronizar un plan.
+function refreshScheduleViewsAfterSync(){
+  if(currentScreen==='calendario') renderCalendario();
+  if(currentScreen==='dashboard') renderDashboard();
+}
+
+let assignCyclicVal = false;
+function setAssignCyclic(val){
+  assignCyclicVal = val;
+  document.getElementById('assign-cyclic-no').classList.toggle('on', !val);
+  document.getElementById('assign-cyclic-no').style.background = !val ? 'var(--green)' : '';
+  document.getElementById('assign-cyclic-no').style.borderColor = !val ? 'var(--green)' : '';
+  document.getElementById('assign-cyclic-yes').classList.toggle('on', val);
+  document.getElementById('assign-cyclic-yes').style.background = val ? 'var(--green)' : '';
+  document.getElementById('assign-cyclic-yes').style.borderColor = val ? 'var(--green)' : '';
+  document.getElementById('assign-cyclelimit-wrap').style.display = val ? '' : 'none';
+}
+
+function openAssignPlanModal(){
+  document.getElementById('assign-start-date').value = todayStr();
+  document.getElementById('assign-weeks').value = 4;
+  document.getElementById('assign-cyclelimit').value = '';
+  setAssignCyclic(false);
+  openModal('modal-assignplan');
+}
+
+function confirmAssignPlan(){
+  const plan = findPlan(currentPlanId);
+  if(!plan) return;
+  const startStr = document.getElementById('assign-start-date').value;
+  const weeks = Math.max(1, Math.min(52, parseInt(document.getElementById('assign-weeks').value)||4));
+  const start = strToDate(startStr);
+  // find monday of the start week
+  const startOffset = (start.getDay()+6)%7;
+  const monday = new Date(start); monday.setDate(start.getDate()-startOffset);
+
+  const assignId = uid('assign');
+  const {count, firstDs, lastDs} = fillPlanCycle(plan, monday, weeks, assignId);
+
+  if(!state.assignments) state.assignments = [];
+  const cyclic = assignCyclicVal;
+  const cycleLimitRaw = parseInt(document.getElementById('assign-cyclelimit').value);
+  const cycleLimit = (cyclic && cycleLimitRaw>0) ? cycleLimitRaw : null;
+  state.assignments.push({
+    id: assignId, planId: plan.id, planName: plan.name, startDate: firstDs, endDate: lastDs, weeks, createdAt: Date.now(),
+    cyclic, cycleLimit, cyclesGenerated: 1,
+    startMonday: dateToStr(monday), weeksPerCycle: weeks
+  });
+  persist();
+  closeModal('modal-assignplan');
+  closeModal('modal-plandetail');
+  showToast(`Plan programado: ${count} ejercicios añadidos ✓`);
+  if(currentScreen==='calendario') renderCalendario();
+  if(currentScreen==='dashboard') renderDashboard();
+}
+
+/* ---------- PLANES PROPIOS ---------- */
+function openNewPlanModal(){
+  document.getElementById('np-name').value = '';
+  document.getElementById('np-desc').value = '';
+  openModal('modal-newplan');
+}
+function saveNewPlan(){
+  const name = document.getElementById('np-name').value.trim();
+  if(!name){ showToast('Ponle un nombre al programa'); return; }
+  const mkDay = ()=>({label:'', blocks:[{label:'🌅 Bloque Mañana', items:[]},{label:'🏋️ Bloque Entreno', items:[]}]});
+  const plan = {
+    id: uid('cplan'),
+    name,
+    desc: document.getElementById('np-desc').value.trim(),
+    weeks: '',
+    days: { 'Lunes':mkDay(), 'Martes':mkDay(), 'Miércoles':mkDay(), 'Jueves':mkDay(), 'Viernes':mkDay(), 'Sábado':mkDay(), 'Domingo':mkDay() }
+  };
+  state.customPlans.push(plan);
+  persist();
+  closeModal('modal-newplan');
+  renderPlanes();
+  showToast('Programa creado ✓ (2 bloques por día: puedes añadir más con "+ Bloque")');
+  openPlanDetail(plan.id);
+}
+
+let pdaTargetDay = null;
+let pdaTargetBlock = null;
+let pdaSelectedExId = null;
+function openAddToPlanDay(dayName, blockIdx){
+  pdaTargetDay = dayName;
+  pdaTargetBlock = blockIdx;
+  pdaSelectedExId = null;
+  document.getElementById('pda-title').textContent = 'Añadir a '+dayName;
+  document.getElementById('pda-search').value='';
+  document.getElementById('pda-notes').value='';
+  document.getElementById('pda-sets').value='';
+  renderPdaList();
+  openModal('modal-planday-add');
+}
+function renderPdaList(){
+  const q = (document.getElementById('pda-search').value||'').toLowerCase();
+  const list = state.exercises.filter(e=>!q || e.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'es')).slice(0,40);
+  document.getElementById('pda-list').innerHTML = list.map(e=>
+    `<div class="planned-item" style="cursor:pointer;${pdaSelectedExId===e.id?'background:var(--green-light);border-radius:8px;':''}" onclick="pdaSelect('${e.id}')">
+      <div class="planned-body"><div class="planned-name">${e.icon} ${e.name}</div></div>
+    </div>`).join('');
+}
+function pdaSelect(id){ pdaSelectedExId = id; renderPdaList(); }
+function confirmAddToPlanDay(){
+  if(!pdaSelectedExId){ showToast('Elige un ejercicio'); return; }
+  const plan = findPlan(currentPlanId);
+  const notes = document.getElementById('pda-notes').value.trim();
+  const setsVal = parseInt(document.getElementById('pda-sets').value)||null;
+  plan.days[pdaTargetDay].blocks[pdaTargetBlock].items.push({exId: pdaSelectedExId, notes, sets: setsVal});
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  closeModal('modal-planday-add');
+  openPlanDetail(currentPlanId);
+  refreshScheduleViewsAfterSync();
+  showToast('Añadido al programa ✓');
+}
+function removeFromPlanDay(dayName, blockIdx, idx){
+  const plan = findPlan(currentPlanId);
+  plan.days[dayName].blocks[blockIdx].items.splice(idx,1);
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  openPlanDetail(currentPlanId);
+  refreshScheduleViewsAfterSync();
+}
+
+// Edición rápida de "nº de series" y notas de un ejercicio ya añadido a un día del plan.
+// Así siempre se puede corregir/rellenar el número de series aunque falte en la nota original.
+function editPlanItemSets(dayName, blockIdx, idx){
+  const plan = findPlan(currentPlanId);
+  const it = plan.days[dayName].blocks[blockIdx].items[idx];
+  const setsInput = prompt('Nº de series para este ejercicio (déjalo vacío si no aplica):', it.sets||'');
+  if(setsInput===null) return;
+  const notesInput = prompt('Notas (reps, RPE, descanso, carga...):', it.notes||'');
+  if(notesInput===null) return;
+  it.sets = parseInt(setsInput)||null;
+  it.notes = notesInput.trim();
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  openPlanDetail(currentPlanId);
+  refreshScheduleViewsAfterSync();
+  showToast('Ejercicio actualizado ✓');
+}
+
+/* =========================================================================
+   GESTIÓN DE CATEGORÍAS
+   ========================================================================= */
+function openCategoryManager(){
+  renderCategoryManager();
+  openModal('modal-categories');
+}
+function countSubcatNodes(nodes){
+  if(!nodes || !nodes.length) return 0;
+  return nodes.reduce((acc,n)=>acc + 1 + countSubcatNodes(n.children), 0);
+}
+function renderCategoryManager(){
+  document.getElementById('cat-manager-body').innerHTML = state.categories.map(c=>{
+    const count = state.exercises.filter(e=>e.cats.some(cc=>cc.c===c.id)).length;
+    const subCount = countSubcatNodes(c.subcats);
+    return `<div class="planned-item">
+      <div class="planned-body">
+        <div class="planned-name">${c.icon} ${c.name}</div>
+        <div class="planned-sub">${count} ejercicio${count===1?'':'s'} · ${subCount} subcategoría${subCount===1?'':'s'}</div>
+      </div>
+      <button class="planned-rm" onclick="removeCategory('${c.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+function addNewCategory(){
+  const name = prompt('Nombre de la nueva categoría:');
+  if(!name) return;
+  const icon = prompt('Emoji para representarla (opcional):','⭐') || '⭐';
+  const id = uid('cat');
+  state.categories.push({id, name, icon, color:'gray', subcats:[]});
+  persist();
+  renderCategoryManager();
+}
+function removeCategory(catId){
+  const inUse = state.exercises.some(e=>e.cats.some(c=>c.c===catId));
+  if(inUse && !confirm('Hay ejercicios en esta categoría. ¿Eliminarla igualmente? (los ejercicios mantendrán sus otras categorías)')) return;
+  // Si es una categoría de fábrica, recordamos el borrado para que mergeDefaults()
+  // no la vuelva a añadir en el próximo refresco o al importar un backup.
+  if(DEFAULT_CATEGORIES.some(d=>d.id===catId) && !state.deletedDefaults.categories.includes(catId)){
+    state.deletedDefaults.categories.push(catId);
+  }
+  state.categories = state.categories.filter(c=>c.id!==catId);
+  state.exercises.forEach(e=>{ e.cats = e.cats.filter(c=>c.c!==catId); });
+  persist();
+  renderCategoryManager();
+}
+
+/* =========================================================================
+   AJUSTES: EXPORTAR / IMPORTAR JSON LOCAL
+   ========================================================================= */
+function renderAjustes(){
+  renderDropboxFields();
+  updateDropboxStatusUI();
+}
+
+const BACKUP_FORMAT_VERSION = 2;
+
+function exportJSON(){
+  // Backup COMPLETO de la app: ejercicios y categorías (de fábrica y propios),
+  // planes (Fase 1/2/3 con tus ediciones + tus planes propios en customPlans),
+  // calendario/agenda (schedule), registros de dolor (painLogs) y ajustes de Dropbox.
+  // Todo vive dentro de `state`, así que basta con envolverlo con unos metadatos
+  // que permiten validar el archivo al importarlo.
+  const backup = {
+    app: 'Baul del Movimiento',
+    backupFormatVersion: BACKUP_FORMAT_VERSION,
+    exportedAt: Date.now(),
+    exportedAtLabel: new Date().toISOString(),
+    state: state
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json;charset=utf-8'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `baul_movimiento_backup_${todayStr()}.json`;
+  link.click();
+  showToast('Backup completo exportado ✓ (ejercicios, planes, calendario, registros)');
+}
+
+function importJSON(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      // Soporta el formato nuevo {app, backupFormatVersion, state:{...}}
+      // y también backups antiguos que eran directamente el objeto state.
+      const data = (parsed && typeof parsed==='object' && parsed.state && typeof parsed.state==='object')
+        ? parsed.state
+        : parsed;
+
+      const looksValid = data && typeof data==='object' &&
+        (Array.isArray(data.exercises) || Array.isArray(data.categories) || Array.isArray(data.programs));
+      if(!looksValid){
+        showToast('Error al importar: el archivo no parece un backup válido de esta app');
+        return;
+      }
+
+      const nPlans = (data.programs?.length||0) + (data.customPlans?.length||0);
+      const nDays = Object.keys(data.schedule||{}).length;
+      const nPain = Object.keys(data.painLogs||{}).length;
+      const resumen = `${(data.exercises||[]).length} ejercicios, ${nPlans} planes, ${nDays} día(s) programados en el calendario y ${nPain} registro(s) de dolor.`;
+      if(!confirm(`Esto reemplazará TODOS tus datos actuales en este dispositivo por el backup:\n\n${resumen}\n\n¿Continuar?`)) return;
+
+      // preserve dropbox connection settings unless the import explicitly has them
+      const keepDropbox = state.dropbox;
+      state = data;
+      if(!state.dropbox || !state.dropbox.connected) state.dropbox = keepDropbox;
+
+      // Rellena huecos si el backup viene de una versión antigua de la app
+      if(!state.categories) state.categories = [];
+      if(!state.exercises) state.exercises = [];
+      if(!state.programs) state.programs = [];
+      if(!state.customPlans) state.customPlans = [];
+      if(!state.schedule) state.schedule = {};
+      if(!state.painLogs) state.painLogs = {};
+      if(!state.deletedDefaults) state.deletedDefaults = { exercises: [], programs: [], categories: [] };
+
+      mergeDefaults();
+      saveLocal();
+      showToast('Backup importado ✓ (ejercicios, planes, calendario, registros). Recargando...');
+      setTimeout(()=>location.reload(), 1200);
+    }catch(err){
+      showToast('Error al importar: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetAllData(){
+  if(!confirm('Esto borrará TODOS tus datos guardados en este dispositivo (ejercicios propios, planes, calendario, registros). ¿Seguro?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+/* =========================================================================
+   DROPBOX SYNC (OAuth2 Authorization Code + PKCE — sin backend, sin secreto)
+   ========================================================================= */
+const DROPBOX_FILE_PATH = '/datos.json';
+
+function renderDropboxFields(){
+  const db = state.dropbox;
+  const defaultRedirect = location.href.split('#')[0].split('?')[0];
+  document.getElementById('dropbox-setup-fields').innerHTML = `
+    <div class="form-group">
+      <label class="form-label">App Key de Dropbox</label>
+      <input class="form-input" id="db-appkey" placeholder="Pega aquí tu App key" value="${db.appKey||''}" oninput="saveDropboxFields()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Redirect URI (debe coincidir con la de Dropbox App Console)</label>
+      <input class="form-input" id="db-redirect" placeholder="${defaultRedirect}" value="${db.redirectUri||defaultRedirect}" oninput="saveDropboxFields()">
+      <div class="code-box">${db.redirectUri||defaultRedirect}</div>
+    </div>
+  `;
+}
+function saveDropboxFields(){
+  state.dropbox.appKey = document.getElementById('db-appkey').value.trim();
+  state.dropbox.redirectUri = document.getElementById('db-redirect').value.trim();
+  saveLocal();
+}
+
+function updateDropboxStatusUI(){
+  const db = state.dropbox;
+  const dot = document.getElementById('settings-sync-dot');
+  const text = document.getElementById('settings-sync-text');
+  if(db.connected){
+    dot.classList.add('ok'); dot.classList.remove('err');
+    text.textContent = db.lastSync ? `Conectado · última sincronización ${new Date(db.lastSync).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}` : 'Conectado · aún sin sincronizar';
+  } else {
+    dot.classList.remove('ok'); dot.classList.remove('err');
+    text.textContent = 'No conectado';
+  }
+}
+function updateSyncIndicator(){
+  const dot = document.getElementById('sync-dot');
+  if(!dot) return;
+  dot.classList.remove('ok','err');
+  if(state.dropbox.connected) dot.classList.add('ok');
+}
+
+/* ---- PKCE helpers ---- */
+function base64UrlEncode(arrBuf){
+  let str = '';
+  const bytes = new Uint8Array(arrBuf);
+  for(let i=0;i<bytes.length;i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function randomVerifier(){
+  const arr = new Uint8Array(64);
+  crypto.getRandomValues(arr);
+  return base64UrlEncode(arr.buffer);
+}
+async function sha256Challenge(verifier){
+  const enc = new TextEncoder().encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', enc);
+  return base64UrlEncode(digest);
+}
+
+async function dropboxConnect(){
+  const appKey = document.getElementById('db-appkey').value.trim();
+  const redirectUri = document.getElementById('db-redirect').value.trim();
+  if(!appKey || !redirectUri){ showToast('Pon tu App Key y la Redirect URI primero'); return; }
+  if(!window.isSecureContext || !window.crypto || !window.crypto.subtle){
+    showToast('Dropbox necesita que la app esté servida por HTTPS (o localhost). Ábrela desde una URL https:// para poder conectar.');
+    return;
+  }
+  if(!/^https:\/\//i.test(redirectUri) && !/^http:\/\/localhost/i.test(redirectUri)){
+    showToast('La Redirect URI debe empezar por https:// (o http://localhost en pruebas locales)');
+    return;
+  }
+  state.dropbox.appKey = appKey;
+  state.dropbox.redirectUri = redirectUri;
+  const verifier = randomVerifier();
+  state.dropbox.codeVerifier = verifier;
+  saveLocal();
+  const challenge = await sha256Challenge(verifier);
+  const params = new URLSearchParams({
+    client_id: appKey,
+    response_type: 'code',
+    redirect_uri: redirectUri,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    token_access_type: 'offline',
+  });
+  location.href = 'https://www.dropbox.com/oauth2/authorize?'+params.toString();
+}
+
+async function handleDropboxRedirect(){
+  const params = new URLSearchParams(location.search);
+  const oauthError = params.get('error');
+  const code = params.get('code');
+  if(!oauthError && !code) return;
+
+  // Siempre limpiamos la URL al final para no arrastrar ?code=/?error= en recargas futuras
+  const cleanUrl = ()=>history.replaceState({}, '', location.pathname);
+
+  if(oauthError){
+    showToast('Dropbox: acceso denegado o cancelado ('+oauthError+')');
+    cleanUrl();
+    return;
+  }
+
+  const db = state.dropbox;
+  if(!db.appKey || !db.codeVerifier){
+    // Esto ocurre casi siempre porque el navegador que abrió Dropbox (o el que volvió a esta
+    // URL) no comparte el localStorage con el navegador/pestaña original — típico en Safari
+    // "Añadir a pantalla de inicio", navegadores integrados de otras apps, o modo incógnito.
+    showToast('No se pudo completar la conexión (se perdió la sesión de autorización). Abre esta app siempre en el mismo navegador/pestaña e inténtalo de nuevo.');
+    cleanUrl();
+    return;
+  }
+  try{
+    const body = new URLSearchParams({
+      code,
+      grant_type: 'authorization_code',
+      client_id: db.appKey,
+      redirect_uri: db.redirectUri,
+      code_verifier: db.codeVerifier,
+    });
+    const res = await fetch('https://api.dropboxapi.com/oauth2/token', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+    const data = await res.json();
+    if(res.ok && data.access_token){
+      db.accessToken = data.access_token;
+      db.refreshToken = data.refresh_token || db.refreshToken;
+      db.expiresAt = Date.now() + (data.expires_in||14400)*1000;
+      db.connected = true;
+      saveLocal();
+      showToast('Dropbox conectado ✓');
+      cleanUrl();
+      await dropboxDownloadAndMerge();
+    } else {
+      showToast('Error conectando Dropbox: '+(data.error_description||data.error||JSON.stringify(data)));
+      cleanUrl();
+    }
+  }catch(e){
+    showToast('Error conectando Dropbox: '+e.message);
+    cleanUrl();
+  }
+}
+
+async function dropboxEnsureToken(){
+  const db = state.dropbox;
+  if(!db.connected) return false;
+  if(db.accessToken && Date.now() < db.expiresAt - 60000) return true;
+  if(!db.refreshToken || !db.appKey) return false;
+  try{
+    const body = new URLSearchParams({ grant_type:'refresh_token', refresh_token: db.refreshToken, client_id: db.appKey });
+    const res = await fetch('https://api.dropboxapi.com/oauth2/token', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+    const data = await res.json();
+    if(data.access_token){
+      db.accessToken = data.access_token;
+      db.expiresAt = Date.now() + (data.expires_in||14400)*1000;
+      saveLocal();
+      return true;
+    }
+  }catch(e){ console.error(e); }
+  return false;
+}
+
+let dropboxSyncTimer = null;
+function scheduleDropboxSync(){
+  if(!state.dropbox.connected) return;
+  clearTimeout(dropboxSyncTimer);
+  dropboxSyncTimer = setTimeout(()=>dropboxUpload(), 2500);
+}
+
+async function dropboxUpload(){
+  const ok = await dropboxEnsureToken();
+  if(!ok){ markSyncError(); return; }
+  try{
+    const payload = JSON.stringify(state);
+    const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
+      method:'POST',
+      headers:{
+        'Authorization': 'Bearer '+state.dropbox.accessToken,
+        'Content-Type':'application/octet-stream',
+        'Dropbox-API-Arg': JSON.stringify({path: DROPBOX_FILE_PATH, mode:'overwrite', mute:true})
+      },
+      body: payload
+    });
+    if(res.ok){
+      state.dropbox.lastSync = Date.now();
+      saveLocal();
+      updateSyncIndicator();
+      if(currentScreen==='ajustes') updateDropboxStatusUI();
+    } else { markSyncError(); }
+  }catch(e){ markSyncError(); }
+}
+
+async function dropboxDownloadAndMerge(){
+  const ok = await dropboxEnsureToken();
+  if(!ok){ markSyncError(); return; }
+  try{
+    const res = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method:'POST',
+      headers:{
+        'Authorization': 'Bearer '+state.dropbox.accessToken,
+        'Dropbox-API-Arg': JSON.stringify({path: DROPBOX_FILE_PATH})
+      }
+    });
+    if(res.status===409){ /* file doesn't exist yet: upload current state */ await dropboxUpload(); return; }
+    if(!res.ok){ markSyncError(); showToast('Error descargando de Dropbox (código '+res.status+')'); return; }
+    const remote = await res.json();
+    if(remote && remote.updatedAt){
+      // Si es la PRIMERA sincronización de este dispositivo (nunca se ha conectado antes),
+      // el estado local recién creado tiene un updatedAt = "ahora mismo" que SIEMPRE es más
+      // reciente que el remoto guardado antes, aunque el dispositivo no tenga ningún dato
+      // real. Sin este caso especial, un dispositivo nuevo nunca heredaría lo que ya tenías
+      // guardado en Dropbox. Por eso, en el primer sync forzamos traer los datos remotos.
+      const isFirstSyncOnThisDevice = !state.dropbox.lastSync;
+      if(isFirstSyncOnThisDevice || !state.updatedAt || remote.updatedAt > state.updatedAt){
+        const keepDropbox = state.dropbox;
+        const localSchedule = state.schedule; // PRESERVAR el schedule local
+        const localPainLogs = state.painLogs; // PRESERVAR pain logs locales
+        state = remote;
+        state.dropbox = keepDropbox;
+        state.schedule = localSchedule; // Restaurar schedule local (cambios que hizo el usuario)
+        state.painLogs = localPainLogs; // Restaurar pain logs locales
+        mergeDefaults();
+        saveLocal();
+        showToast('Datos recuperados de Dropbox ✓');
+        switchScreen(currentScreen);
+      }
+    }
+    state.dropbox.lastSync = Date.now();
+    saveLocal();
+    updateSyncIndicator();
+    if(currentScreen==='ajustes') updateDropboxStatusUI();
+  }catch(e){ console.error(e); }
+}
+
+function dropboxSyncNow(){
+  if(!state.dropbox.connected){ showToast('Conecta Dropbox primero'); return; }
+  showToast('Sincronizando...');
+  dropboxDownloadAndMerge().then(()=>dropboxUpload());
+}
+
+function dropboxDisconnect(){
+  state.dropbox.connected = false;
+  state.dropbox.accessToken = '';
+  state.dropbox.refreshToken = '';
+  state.dropbox.expiresAt = 0;
+  saveLocal();
+  updateDropboxStatusUI();
+  updateSyncIndicator();
+  showToast('Dropbox desconectado');
+}
+
+function markSyncError(){
+  const dot = document.getElementById('sync-dot');
+  if(dot){ dot.classList.remove('ok'); dot.classList.add('err'); }
+}
+
+/* =========================================================================
+   DESLIZADOR HORIZONTAL (ESCRITORIO) — rueda del ratón + arrastrar con clic
+   ========================================================================= */
+document.addEventListener('wheel', function(e){
+  const el = e.target.closest('.hscroll');
+  if(!el) return;
+  if(el.scrollWidth <= el.clientWidth) return;
+  if(Math.abs(e.deltaY) >= Math.abs(e.deltaX)){
+    el.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }
+}, {passive:false});
+
+let hDrag = null;
+document.addEventListener('mousedown', function(e){
+  const el = e.target.closest('.hscroll');
+  if(!el || e.button!==0) return;
+  hDrag = { el, startX: e.pageX, startScroll: el.scrollLeft, moved:false };
+  el.classList.add('dragging');
+});
+document.addEventListener('mousemove', function(e){
+  if(!hDrag) return;
+  const dx = e.pageX - hDrag.startX;
+  if(Math.abs(dx) > 4) hDrag.moved = true;
+  hDrag.el.scrollLeft = hDrag.startScroll - dx;
+});
+document.addEventListener('mouseup', function(){
+  if(hDrag){ hDrag.el.classList.remove('dragging'); if(hDrag.moved) hDragJustMoved = true; }
+  hDrag = null;
+});
+let hDragJustMoved = false;
+document.addEventListener('click', function(e){
+  if(hDragJustMoved){ e.stopPropagation(); e.preventDefault(); hDragJustMoved = false; }
+}, true);
+
+/* =========================================================================
+   INICIALIZACIÓN
+   ========================================================================= */
+function init(){
+  maintainCyclicAssignments();
+  switchScreen('dashboard');
+  handleDropboxRedirect();
+  if(state.dropbox.connected){
+    dropboxDownloadAndMerge();
+  }
+  updateSyncIndicator();
+}
+init();
+</script>
+</body>
+</html>
