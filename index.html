@@ -341,7 +341,7 @@ button,input,textarea,select{font-family:inherit;}
 
   <div class="settings-block">
     <h3>☁️ Copia de seguridad en Dropbox</h3>
-    <p>Conecta tu Dropbox para que la app guarde automáticamente todos tus ejercicios, planes y registros en un archivo <b>/Apps/BaulDelMovimiento/</b> dentro de tu cuenta. Se sincroniza solo, sin backups manuales.</p>
+    <p>Conecta tu Dropbox para que la app guarde automáticamente todos tus ejercicios, planes y registros en un archivo <b>/Apps/Sport-Rehab/datos.json</b> dentro de tu cuenta. Se sincroniza solo, sin backups manuales.</p>
     <p style="background:var(--amber-light);border:1px solid var(--amber);border-radius:10px;padding:8px 10px;color:var(--text);"><b>Importante:</b> esto solo funciona si abres la app desde una dirección <b>https://</b> (por ejemplo, la app subida a GitHub Pages, Netlify o similar). Abrirla como archivo local (file://) o por http:// sin cifrar impedirá conectar con Dropbox.</p>
     <div class="status-line"><span class="sync-dot" id="settings-sync-dot"></span><span id="settings-sync-text">No conectado</span></div>
     <div id="dropbox-setup-fields"></div>
@@ -3502,7 +3502,7 @@ function resetAllData(){
 /* =========================================================================
    DROPBOX SYNC (OAuth2 Authorization Code + PKCE — sin backend, sin secreto)
    ========================================================================= */
-const DROPBOX_FILE_PATH = '/Sport-Rehab/datos.json';
+const DROPBOX_FILE_PATH = '/datos.json';
 
 function renderDropboxFields(){
   const db = state.dropbox;
