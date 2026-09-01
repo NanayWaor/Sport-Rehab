@@ -462,8 +462,9 @@ button,input,textarea,select{font-family:inherit;}
         <textarea class="form-textarea" id="ef-execution" placeholder="Posición inicial...&#10;Descenso...&#10;Ascenso..."></textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">Respiración (un paso por línea)</label>
-        <textarea class="form-textarea" id="ef-breathing" placeholder="Inhala en la fase excéntrica...&#10;Exhala en el esfuerzo..."></textarea>
+        <label class="form-label">Niveles de progresión (uno por línea)</label>
+        <textarea class="form-textarea" id="ef-levels" placeholder="Nivel 1: Rodillas apoyadas...&#10;Nivel 2: Rodillas elevadas...&#10;Nivel 3: Versión completa..."></textarea>
+        <div class="form-hint">La respiración ahora se describe dentro de los pasos de "Ejecución". Aquí define solo las progresiones/niveles de dificultad de este ejercicio.</div>
       </div>
       <div class="form-group">
         <label class="form-label">Tips / puntos clave (uno por línea)</label>
@@ -1056,10 +1057,11 @@ function migrateCategoriesV2(){
   const zonesSet = new Set(ZONES);
   let migratedCount = 0;
   (state.exercises||[]).forEach(ex=>{
-    // Respiración: antes era texto libre; ahora es una lista con checks, como Ejecución/Tips.
-    if(typeof ex.breathing === 'string'){
-      ex.breathing = ex.breathing.split('\n').map(s=>s.trim()).filter(Boolean);
+    // Niveles de progresión: por si llega texto libre; se normaliza a lista, como Ejecución/Tips.
+    if(typeof ex.levels === 'string'){
+      ex.levels = ex.levels.split('\n').map(s=>s.trim()).filter(Boolean);
     }
+    if(!ex.levels) ex.levels = [];
     if(!ex.cats) return;
     const newCats = [];
     const seen = new Set();
@@ -1756,7 +1758,7 @@ function renderExdTabs(){
   const tabs = [
     {id:'ejecucion', label:'Ejecución'},
     {id:'seguimiento', label:'📈 Seguimiento'},
-    {id:'respiracion', label:'Respiración'},
+    {id:'niveles', label:'Niveles'},
     {id:'tips', label:'Tips'},
     {id:'variantes', label:'Variantes'},
     {id:'info', label:'Info'},
@@ -1770,8 +1772,8 @@ function renderExdTabs(){
       <ul class="exd-list">${(ex.execution||[]).map(s=>`<li>${s}</li>`).join('') || '<li>Sin pasos definidos todavía.</li>'}</ul>
     </div>`;
 
-  const breathHtml = `<div class="exd-block"><div class="exd-block-label">Respiración</div>
-      <ul class="exd-list">${(ex.breathing||[]).map(s=>`<li>${s}</li>`).join('') || '<li>No especificada todavía.</li>'}</ul>
+  const levelsHtml = `<div class="exd-block"><div class="exd-block-label">Niveles de progresión</div>
+      <ul class="exd-list">${(ex.levels||[]).map(s=>`<li>${s}</li>`).join('') || '<li>Aún no has definido niveles de progresión para este ejercicio. Añádelos desde el editor (✏️).</li>'}</ul>
     </div>`;
 
   const tipsHtml = `<div class="exd-block"><div class="exd-block-label">Tips clave</div>
@@ -1812,7 +1814,7 @@ function renderExdTabs(){
   document.getElementById('exd-panels').innerHTML = `
     <div class="exd-panel ${exdActiveTab==='ejecucion'?'active':''}" data-p="ejecucion">${execHtml}</div>
     <div class="exd-panel ${exdActiveTab==='seguimiento'?'active':''}" data-p="seguimiento">${seguimientoHtml}</div>
-    <div class="exd-panel ${exdActiveTab==='respiracion'?'active':''}" data-p="respiracion">${breathHtml}</div>
+    <div class="exd-panel ${exdActiveTab==='niveles'?'active':''}" data-p="niveles">${levelsHtml}</div>
     <div class="exd-panel ${exdActiveTab==='tips'?'active':''}" data-p="tips">${tipsHtml}</div>
     <div class="exd-panel ${exdActiveTab==='variantes'?'active':''}" data-p="variantes">${variantsHtml}</div>
     <div class="exd-panel ${exdActiveTab==='info'?'active':''}" data-p="info">${infoHtml}</div>
@@ -1954,7 +1956,7 @@ function openExerciseEditor(exId){
   document.getElementById('ef-icon').value = ex ? (ex.icon||'') : '💪';
   document.getElementById('ef-desc').value = ex ? (ex.desc||'') : '';
   document.getElementById('ef-execution').value = ex ? (ex.execution||[]).join('\n') : '';
-  document.getElementById('ef-breathing').value = ex ? (Array.isArray(ex.breathing) ? ex.breathing.join('\n') : (ex.breathing||'')) : '';
+  document.getElementById('ef-levels').value = ex ? (Array.isArray(ex.levels) ? ex.levels.join('\n') : (ex.levels||'')) : '';
   document.getElementById('ef-tips').value = ex ? (ex.tips||[]).join('\n') : '';
   document.getElementById('ef-injury').value = ex ? (ex.injury||'') : '';
   document.getElementById('ef-setsreps').value = ex ? (ex.setsReps||'') : '';
@@ -2313,7 +2315,7 @@ function saveExerciseEditor(){
     icon: document.getElementById('ef-icon').value.trim() || '💪',
     desc: document.getElementById('ef-desc').value.trim(),
     execution: document.getElementById('ef-execution').value.split('\n').map(s=>s.trim()).filter(Boolean),
-    breathing: document.getElementById('ef-breathing').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    levels: document.getElementById('ef-levels').value.split('\n').map(s=>s.trim()).filter(Boolean),
     tips: document.getElementById('ef-tips').value.split('\n').map(s=>s.trim()).filter(Boolean),
     injury: document.getElementById('ef-injury').value.trim(),
     setsReps: document.getElementById('ef-setsreps').value.trim(),
@@ -2912,7 +2914,17 @@ function renderPlannedListInline(dateStr, items){
       totalCount = grp.items.length;
     }
 
-    if(onlyOneGroup) return blocksHtml;
+    // Info de fase/bloque del programa (reps · RPE) + acceso directo para editarla,
+    // sin tener que salir del Calendario ni recordar en qué semana/fase estás.
+    const planForPhase = (!isTasksBucket && key!=='__manual__') ? findPlan(key) : null;
+    const phaseInfoHtml = (planForPhase && planForPhase.desc) ? `
+      <div style="display:flex;align-items:flex-start;gap:6px;margin:2px 0 8px;padding:8px 10px;background:var(--bg);border-radius:9px;">
+        <div style="font-size:11.5px;color:var(--text2);line-height:1.4;flex:1;">🎯 ${planForPhase.desc}${planForPhase.weeks?` <span style="color:var(--text3);">(Semanas ${planForPhase.weeks})</span>`:''}</div>
+        <button class="link-btn" style="font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();editPlanPhaseFromCalendar('${key}')">✏️ Editar</button>
+      </div>
+    ` : '';
+
+    if(onlyOneGroup) return phaseInfoHtml + blocksHtml;
 
     const isFirst = idx===0, isLast = idx===orderedKeys.length-1;
     // El bloque de tareas sin hora usa '00:00' internamente solo para ordenar el primero;
@@ -2930,7 +2942,7 @@ function renderPlannedListInline(dateStr, items){
         <button class="btn-icon-sm" title="Bajar" ${isLast?'disabled':''} style="${isLast?'opacity:.3;':''}" onclick="event.stopPropagation();moveScheduleGroup('${dateStr}','${key}',1)">▼</button>
       </div>
     `;
-    return header + (isExpanded ? blocksHtml : '');
+    return header + (isExpanded ? (phaseInfoHtml + blocksHtml) : '');
   }).join('');
 }
 
@@ -3111,6 +3123,11 @@ function deletePlanBlock(dayName, blockIdx){
 }
 
 /* ---------- EDITAR / ELIMINAR PROGRAMA COMPLETO ---------- */
+function editPlanPhaseFromCalendar(planId){
+  currentPlanId = planId;
+  openEditPlanModal();
+}
+
 function openEditPlanModal(){
   const plan = findPlan(currentPlanId);
   if(!plan) return;
@@ -3713,15 +3730,15 @@ async function dropboxDownloadAndMerge(){
       // reciente que el remoto guardado antes, aunque el dispositivo no tenga ningún dato
       // real. Sin este caso especial, un dispositivo nuevo nunca heredaría lo que ya tenías
       // guardado en Dropbox. Por eso, en el primer sync forzamos traer los datos remotos.
+      // Sincronización completa: el documento entero (incluido el calendario/schedule
+      // y los registros de dolor) se trata igual que el resto de datos: gana siempre
+      // el más reciente por 'updatedAt'. Antes se preservaba el schedule/painLogs
+      // locales a propósito, lo que impedía que el calendario viajara entre dispositivos.
       const isFirstSyncOnThisDevice = !state.dropbox.lastSync;
       if(isFirstSyncOnThisDevice || !state.updatedAt || remote.updatedAt > state.updatedAt){
         const keepDropbox = state.dropbox;
-        const localSchedule = state.schedule; // PRESERVAR el schedule local
-        const localPainLogs = state.painLogs; // PRESERVAR pain logs locales
         state = remote;
         state.dropbox = keepDropbox;
-        state.schedule = localSchedule; // Restaurar schedule local (cambios que hizo el usuario)
-        state.painLogs = localPainLogs; // Restaurar pain logs locales
         mergeDefaults();
         saveLocal();
         showToast('Datos recuperados de Dropbox ✓');
@@ -3791,6 +3808,19 @@ let hDragJustMoved = false;
 document.addEventListener('click', function(e){
   if(hDragJustMoved){ e.stopPropagation(); e.preventDefault(); hDragJustMoved = false; }
 }, true);
+
+/* =========================================================================
+   RE-SINCRONIZAR AL VOLVER A LA APP (cambio de pestaña, volver de segundo plano)
+   ========================================================================= */
+let lastVisibilitySync = 0;
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState !== 'visible') return;
+  if(!state.dropbox.connected) return;
+  const now = Date.now();
+  if(now - lastVisibilitySync < 15000) return; // evita llamadas repetidas en pocos segundos
+  lastVisibilitySync = now;
+  dropboxDownloadAndMerge();
+});
 
 /* =========================================================================
    INICIALIZACIÓN
