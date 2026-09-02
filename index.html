@@ -891,7 +891,7 @@ function sc(id, name, children){ return children ? {id, name, children} : {id, n
 const DEFAULT_CATEGORIES = [
   {id:'fuerza', name:'Fuerza', icon:'🏋️', color:'coral', subcats:[
     sc('fuerza_muscular','Fuerza muscular'), sc('fuerza_profunda','Fuerza profunda'), sc('isometricos','Isométricos'),
-    sc('excentricos','Excéntricos'), sc('potencia','Potencia'), sc('core','Core'), sc('agarre','Agarre'),
+    sc('excentricos','Excéntricos'), sc('potencia','Potencia'), sc('core','Core'), sc('agarre','Agarre'), sc('tecnica_progresion','Técnica / progresión deportiva'),
   ], facets:[{id:'zona', name:'Zona', options: ZONES}]},
 
   {id:'movimiento', name:'Movimiento', icon:'🦴', color:'teal', subcats:[
@@ -925,10 +925,12 @@ const DEFAULT_CATEGORIES = [
   ], facets:[{id:'objetivo_med', name:'Objetivo (meditación)', options:['Activar','Relajar','Concentrar','Reducir estrés','Mejorar ánimo','Dormir','Recuperar']}]},
 
   {id:'respiracion', name:'Respiración', icon:'🌬️', color:'blue', subcats:[
-    sc('entrenamiento_resp','Entrenamiento respiratorio', [sc('capacidad_pulmonar','Capacidad pulmonar'), sc('fuerza_resp','Fuerza respiratoria'), sc('resistencia_resp','Resistencia respiratoria'), sc('powerbreathe','PowerBreathe')]),
-    sc('pranayama','Pranayama', [sc('ujjayi','Ujjayi'), sc('kapalabhati','Kapalabathi'), sc('nadi_sodhana','Nadi Sodhana'), sc('cuadrada','Respiración Cuadrada')]),
-    sc('tecnicas_resp','Técnicas de respiración', [sc('activacion','Activación'), sc('relajacion_resp','Relajación'), sc('regulacion_estres','Regulación del estrés'), sc('concentracion_resp','Concentración'), sc('sueno','Sueño'), sc('co2','Mejorar tolerancia al CO₂'), sc('capacidad_resp','Mejorar capacidad respiratoria')]),
-  ], facets:[{id:'nivel', name:'Nivel', options:['Principiante','Intermedio','Avanzado']}]},
+    sc('fase1_contacto','Fase 1 · Toma de Contacto', [sc('base_relajacion','Base / relajación diaria'), sc('ritmo_constante','Ritmo constante / atención'), sc('reeducacion_postural','Reeducación postural')]),
+    sc('fase2_limpieza','Fase 2 · Preparación y Limpieza', [sc('limpieza_vias','Limpieza de vías / digestivo'), sc('deportivo_prep','Preparación deportiva'), sc('enfriamiento','Enfriamiento / refrescante')]),
+    sc('fase3_nucleo','Fase 3 · Núcleo Técnico', [sc('equilibrio_snc','Equilibrio del sistema nervioso'), sc('activacion_energia','Activación / energía'), sc('enfriamiento','Enfriamiento / calma'), sc('concentracion_foco','Concentración / foco'), sc('retencion_apnea','Retención / apnea avanzada'), sc('diagnostico_co2','Diagnóstico / tolerancia al CO₂'), sc('core_fuerza','Core / estabilización en fuerza')]),
+    sc('fase4_integracion','Fase 4 · Integración y Calma', [sc('sueno_ansiedad','Sueño / ansiedad'), sc('rehabilitacion_dolor','Rehabilitación / dolor'), sc('liberacion_emocional','Liberación emocional'), sc('aislamiento_sensorial','Aislamiento sensorial')]),
+    sc('entrenamiento_resp','Entrenamiento de la musculatura respiratoria', [sc('capacidad_pulmonar','Capacidad pulmonar'), sc('fuerza_resp','Fuerza respiratoria'), sc('resistencia_resp','Resistencia respiratoria'), sc('powerbreathe','PowerBreathe')]),
+  ]},
 
   {id:'cerebro', name:'Cerebro', icon:'🧠', color:'gray', subcats:[
     sc('memoria','Memoria'), sc('atencion','Atención'), sc('percepcion','Percepción'), sc('reaccion','Reacción'),
