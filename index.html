@@ -729,6 +729,11 @@ button,input,textarea,select{font-family:inherit;}
         <input class="form-input" type="number" id="assign-weeks" value="4" min="1" max="52">
       </div>
       <div class="form-hint">Se rellenará tu calendario repitiendo la semana tipo de este programa. Podrás editar cada día después.</div>
+      <div id="assign-daymap-wrap" style="display:none;margin-top:14px;">
+        <label class="form-label">🗓️ ¿Qué día de la semana haces cada sesión?</label>
+        <div class="form-hint" style="margin-bottom:8px;">Esto NO queda fijo en el programa: es solo cómo se reparte esta programación en tu calendario. Puedes cambiarlo cuando quieras después, sin perder tu progreso.</div>
+        <div id="assign-daymap-body"></div>
+      </div>
       <div class="form-group" style="margin-top:14px;">
         <label class="form-label">🔁 ¿Programa cíclico?</label>
         <div class="toggle-row">
@@ -748,7 +753,23 @@ button,input,textarea,select{font-family:inherit;}
   </div>
 </div>
 
-<!-- ============ MODAL: NUEVO PLAN PROPIO ============ -->
+<!-- ============ MODAL: CAMBIAR DÍAS DE UNA PROGRAMACIÓN YA EXISTENTE ============ -->
+<div class="modal-overlay" id="modal-editdaymap">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-title">🗓️ Días de la semana</div>
+      <button class="modal-close" onclick="closeModal('modal-editdaymap')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-hint" style="margin-bottom:10px;">Cambia qué día de la semana corresponde a cada sesión de este programa. Solo se recalculan los días de hoy en adelante que aún no hayas marcado como hechos; lo ya completado no se toca.</div>
+      <div id="editdaymap-body"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" onclick="confirmEditDayMap()">Guardar días</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-newplan">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -1134,13 +1155,23 @@ function mergeDefaults(){
   });
   if(!state.dropbox) state.dropbox = { appKey:'', redirectUri:'', accessToken:'', refreshToken:'', expiresAt:0, connected:false, lastSync:0, codeVerifier:'' };
   // Migración: planes (de fábrica Y propios) antiguos con estructura plana {items:[]} pasan a {blocks:[{label,items}]}
+  // Aplica tanto a planes "planos" (plan.days, por nombre de día) como a las sesiones de
+  // un plan por fases (plan.phases[i].sessions[slotId], por id de sesión — ver Punto D).
   [...state.programs, ...state.customPlans].forEach(plan=>{
-    Object.keys(plan.days||{}).forEach(dName=>{
-      const d = plan.days[dName];
-      if(d && !d.blocks && d.items){ d.blocks = [{label:'Ejercicios', items: d.items}]; delete d.items; }
-      if(d && !d.blocks){ d.blocks = []; }
+    const dayContainers = plan.phases
+      ? plan.phases.map(ph=>ph.sessions||{})
+      : [plan.days||{}];
+    dayContainers.forEach(container=>{
+      Object.keys(container).forEach(k=>{
+        const d = container[k];
+        if(d && !d.blocks && d.items){ d.blocks = [{label:'Ejercicios', items: d.items}]; delete d.items; }
+        if(d && !d.blocks){ d.blocks = []; }
+      });
     });
   });
+  // Migración: asignaciones de planes por fases sin dayMap -> objeto vacío (se les puede
+  // asignar días desde "🗓️ Días" en Programas sin perder nada de lo ya generado).
+  state.assignments.forEach(a=>{ if(!a.dayMap) a.dayMap = {}; });
 }
 
 function loadLocal(){
@@ -1226,18 +1257,36 @@ function fmtSetsSummary(setsArr){
 
 // Devuelve en qué programas/planes (y qué días de cada uno) aparece un ejercicio dado.
 // Resultado: [{plan, days:['Lunes','Jueves',...]}, ...]
+// Devuelve en qué programas/planes (y en qué "días"/sesiones de cada uno) aparece un
+// ejercicio dado. Para planes por fases (ver Punto D), busca en las sesiones de TODAS
+// las fases y devuelve el nombre de la sesión + fase entre paréntesis si hay más de una.
 function findProgramsWithExercise(exId){
   const results = [];
   findAllPlans().forEach(plan=>{
     const days = [];
-    Object.keys(plan.days||{}).forEach(dayName=>{
-      const day = plan.days[dayName];
-      (day.blocks||[]).forEach(blk=>{
-        (blk.items||[]).forEach(it=>{
-          if(it.exId===exId && !days.includes(dayName)) days.push(dayName);
+    if(plan.phases){
+      plan.phases.forEach(ph=>{
+        const slotLabel = id=> (plan.sessionSlots||[]).find(s=>s.id===id)?.label || id;
+        Object.keys(ph.sessions||{}).forEach(slotId=>{
+          const session = ph.sessions[slotId];
+          (session.blocks||[]).forEach(blk=>{
+            (blk.items||[]).forEach(it=>{
+              const label = `${slotLabel(slotId)}${plan.phases.length>1?` (${ph.label})`:''}`;
+              if(it.exId===exId && !days.includes(label)) days.push(label);
+            });
+          });
         });
       });
-    });
+    } else {
+      Object.keys(plan.days||{}).forEach(dayName=>{
+        const day = plan.days[dayName];
+        (day.blocks||[]).forEach(blk=>{
+          (blk.items||[]).forEach(it=>{
+            if(it.exId===exId && !days.includes(dayName)) days.push(dayName);
+          });
+        });
+      });
+    }
     if(days.length) results.push({plan, days});
   });
   return results;
@@ -1266,7 +1315,7 @@ function getAssignmentBatches(){
   });
 
   const batches = state.assignments.map(a=>({
-    id:a.id, planName:a.planName, startDate:a.startDate, endDate:a.endDate,
+    id:a.id, planId:a.planId, planName:a.planName, startDate:a.startDate, endDate:a.endDate,
     weeks:a.weeks, count:a._count, legacy:false,
     cyclic:!!a.cyclic, cycleLimit:a.cycleLimit||null, cyclesGenerated:a.cyclesGenerated||1
   }));
@@ -2405,9 +2454,9 @@ function setSchedRepeat(val){
   });
 }
 
-function addScheduleItem(dateStr, exId, notes, fromPlan, blockLabel, assignId, sets, time){
+function addScheduleItem(dateStr, exId, notes, fromPlan, blockLabel, assignId, sets, time, phaseInfo){
   if(!state.schedule[dateStr]) state.schedule[dateStr]=[];
-  state.schedule[dateStr].push({ id: uid('sch'), exId, notes: notes||'', sets: sets||null, done:false, fromPlan: fromPlan||null, block: blockLabel||null, assignId: assignId||null, time: time||null });
+  state.schedule[dateStr].push({ id: uid('sch'), exId, notes: notes||'', sets: sets||null, done:false, fromPlan: fromPlan||null, block: blockLabel||null, assignId: assignId||null, time: time||null, phase: phaseInfo||null });
 }
 
 function confirmSchedule(){
@@ -2918,13 +2967,29 @@ function renderPlannedListInline(dateStr, items){
 
     // Info de fase/bloque del programa (reps · RPE) + acceso directo para editarla,
     // sin tener que salir del Calendario ni recordar en qué semana/fase estás.
-    const planForPhase = (!isTasksBucket && key!=='__manual__') ? findPlan(key) : null;
-    const phaseInfoHtml = (planForPhase && planForPhase.desc) ? `
-      <div style="display:flex;align-items:flex-start;gap:6px;margin:2px 0 8px;padding:8px 10px;background:var(--bg);border-radius:9px;">
-        <div style="font-size:11.5px;color:var(--text2);line-height:1.4;flex:1;">🎯 ${planForPhase.desc}${planForPhase.weeks?` <span style="color:var(--text3);">(Semanas ${planForPhase.weeks})</span>`:''}</div>
-        <button class="link-btn" style="font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();editPlanPhaseFromCalendar('${key}')">✏️ Editar</button>
-      </div>
-    ` : '';
+    // Con programas por fases (plan.phases), cada ejercicio programado lleva grabada
+    // la fase exacta que lo generó (item.phase), así que se usa esa info concreta.
+    let phaseInfoHtml = '';
+    if(!isTasksBucket && key!=='__manual__'){
+      const planForPhase = findPlan(key);
+      const itemWithPhase = planGroups[key].items.find(it=>it.phase);
+      if(itemWithPhase){
+        const ph = itemWithPhase.phase;
+        phaseInfoHtml = `
+          <div style="display:flex;align-items:flex-start;gap:6px;margin:2px 0 8px;padding:8px 10px;background:var(--bg);border-radius:9px;">
+            <div style="font-size:11.5px;color:var(--text2);line-height:1.4;flex:1;">🎯 ${ph.desc||ph.label}${ph.weeksRange?` <span style="color:var(--text3);">(Semanas ${ph.weeksRange})</span>`:''}</div>
+            <button class="link-btn" style="font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();editPlanPhaseFromCalendar('${key}',${ph.idx})">✏️ Editar</button>
+          </div>
+        `;
+      } else if(planForPhase && planForPhase.desc){
+        phaseInfoHtml = `
+          <div style="display:flex;align-items:flex-start;gap:6px;margin:2px 0 8px;padding:8px 10px;background:var(--bg);border-radius:9px;">
+            <div style="font-size:11.5px;color:var(--text2);line-height:1.4;flex:1;">🎯 ${planForPhase.desc}${planForPhase.weeks?` <span style="color:var(--text3);">(Semanas ${planForPhase.weeks})</span>`:''}</div>
+            <button class="link-btn" style="font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();editPlanPhaseFromCalendar('${key}')">✏️ Editar</button>
+          </div>
+        `;
+      }
+    }
 
     if(onlyOneGroup) return phaseInfoHtml + blocksHtml;
 
@@ -2996,25 +3061,44 @@ function renderAssignmentsList(){
       <div style="font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;">📋 Programaciones en el calendario</div>
       <div style="font-size:12px;color:var(--text3);margin-top:2px;">Si te equivocaste de fecha o semanas, bórrala aquí entera sin ir día a día.</div>
     </div>
-    ${batches.map(b=>`
+    ${batches.map(b=>{
+      const planForBatch = !b.legacy ? findPlan(b.planId) : null;
+      const hasSessions = planForBatch && planForBatch.sessionSlots && planForBatch.sessionSlots.length;
+      return `
       <div class="plan-card" style="margin:8px 16px;">
         <div class="plan-card-top">
           <div class="plan-card-title">${b.planName} ${b.cyclic?`<span class="badge" style="background:var(--green-light);color:var(--green-dark);">🔁 Cíclico${b.cycleLimit?' · '+b.cyclesGenerated+'/'+b.cycleLimit:''}</span>`:''}</div>
           <div class="plan-card-sub">${fmtDateShort(b.startDate)} → ${fmtDateShort(b.endDate)}${b.weeks?(' · '+b.weeks+' semana'+(b.weeks===1?'':'s')+'/ciclo'):''} · ${b.count} ejercicio${b.count===1?'':'s'}</div>
         </div>
         <div class="plan-card-actions">
+          ${hasSessions?`<button class="btn btn-secondary" style="flex:1;" onclick="openEditDayMapModal('${b.id}')">🗓️ Días</button>`:''}
           ${b.legacy?'':`<button class="btn btn-secondary" style="flex:1;" onclick="toggleAssignmentCyclic('${b.id}')">${b.cyclic?'🔁 Editar ciclo':'🔁 Hacer cíclico'}</button>`}
-          <button class="btn btn-secondary" style="flex:1;" onclick="deleteAssignmentBatch('${b.id}', ${b.legacy?'true':'false'}, '${b.legacyPlanId||''}')">🗑️ Eliminar esta programación</button>
+          <button class="btn btn-secondary" style="flex:1;" onclick="deleteAssignmentBatch('${b.id}', ${b.legacy?'true':'false'}, '${b.legacyPlanId||''}')">🗑️ Eliminar</button>
         </div>
       </div>
-    `).join('')}
+    `;}).join('')}
   `;
 }
 
 function renderPlanCard(plan){
+  const isCustom = !!state.customPlans.find(p=>p.id===plan.id);
+  if(plan.phases && plan.sessionSlots){
+    const totalWeeks = getPlanTotalWeeks(plan);
+    return `<div class="plan-card">
+      <div class="plan-card-top" onclick="openPlanDetail('${plan.id}')" style="cursor:pointer;">
+        <div class="plan-card-title">${plan.name}</div>
+        <div class="plan-card-sub">🔁 ${plan.phases.length} fase${plan.phases.length===1?'':'s'} · ${totalWeeks} semana${totalWeeks===1?'':'s'}/ciclo · ${plan.sessionSlots.length} sesión${plan.sessionSlots.length===1?'':'es'}/semana${isCustom?' · Propio':''}</div>
+        <div class="plan-card-desc">${plan.desc||''}</div>
+      </div>
+      <div class="plan-day-pills hscroll">${plan.phases.map(ph=>`<div class="plan-day-pill">${ph.label||'Fase'}</div>`).join('')}</div>
+      <div class="plan-card-actions">
+        <button class="btn btn-secondary" style="flex:1;" onclick="openPlanDetail('${plan.id}')">Ver detalle</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="openPlanDetail('${plan.id}');setTimeout(()=>openAssignPlanModal(),50);">📅 Programar</button>
+      </div>
+    </div>`;
+  }
   const days = plan.days || {};
   const dayKeys = Object.keys(days);
-  const isCustom = !!state.customPlans.find(p=>p.id===plan.id);
   return `<div class="plan-card">
     <div class="plan-card-top" onclick="openPlanDetail('${plan.id}')" style="cursor:pointer;">
       <div class="plan-card-title">${plan.name}</div>
@@ -3029,18 +3113,130 @@ function renderPlanCard(plan){
   </div>`;
 }
 
+/* =========================================================================
+   PROGRAMAS POR FASES CON SESIONES LIBRES (sin día de la semana fijo)
+   Un plan puede tener `phases` + `sessionSlots`:
+   - `sessionSlots`: lista de sesiones semanales del programa (ej. "Sesión 1",
+     "Sesión 2"...), definida UNA VEZ para todo el plan. No llevan un día de la
+     semana asociado: son solo "ranuras" de una semana-tipo.
+   - `phases[i].sessions[slotId]`: el contenido (bloques→ejercicios) de esa
+     sesión concreta EN esa fase concreta. Así cada fase muestra qué ejercicios
+     tiene coherencia poner en cada sesión, sin fijar en qué día se hacen.
+   - El día de la semana de cada sesión se decide al PROGRAMARLA (asignación),
+     se guarda en `assignment.dayMap` (no en el plan), y se puede cambiar
+     después en cualquier momento sin perder el histórico ni tener que volver
+     a montar el programa.
+   Un plan SIN `phases`/`sessionSlots` sigue funcionando exactamente igual que
+   siempre (mismo `days` de toda la vida, día de la semana fijo) — 100% retrocompatible.
+   ========================================================================= */
+function getPlanTotalWeeks(plan){
+  if(!plan.phases) return null; // plan plano: no tiene una duración de ciclo fija
+  return plan.phases.reduce((s,p)=>s+(p.repeatWeeks||1), 0);
+}
+function getPlanPhaseIdxForWeekOffset(plan, weekOffset){
+  if(!plan.phases || !plan.phases.length) return null;
+  const total = getPlanTotalWeeks(plan);
+  if(!total) return 0;
+  let w = ((weekOffset % total) + total) % total;
+  for(let i=0;i<plan.phases.length;i++){
+    const rw = plan.phases[i].repeatWeeks || 1;
+    if(w < rw) return i;
+    w -= rw;
+  }
+  return plan.phases.length-1;
+}
+// Devuelve {idx,label,desc,weeksRange} de la fase que corresponde a esa semana del ciclo.
+function getPlanPhaseForWeekOffset(plan, weekOffset){
+  const idx = getPlanPhaseIdxForWeekOffset(plan, weekOffset);
+  if(idx===null) return null;
+  const p = plan.phases[idx];
+  return {idx, label:p.label, desc:p.desc, weeksRange:p.weeksRange};
+}
+
+const WEEKDAY_LIST = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+// Fila de pastillas Lunes..Domingo (multi-selección) para elegir el día de una sesión.
+function renderDayPillsRow(slotId, selectedDays, toggleFnName){
+  return WEEKDAY_LIST.map(d=>{
+    const on = (selectedDays||[]).includes(d);
+    return `<div class="toggle-pill ${on?'on':''}" style="${on?'background:var(--text);border-color:var(--text);':''}" onclick="${toggleFnName}('${slotId}','${d}')">${TASK_WEEKDAY_SHORT[d]}</div>`;
+  }).join('');
+}
+
 let currentPlanId = null;
+let currentPhaseIdx = 0;
+
 function openPlanDetail(planId){
   currentPlanId = planId;
+  currentPhaseIdx = 0;
   const plan = findPlan(planId);
+  if(!plan) return;
+  renderPlanDetailAll();
+  openModal('modal-plandetail');
+}
+
+function renderPlanDetailAll(){
+  const plan = findPlan(currentPlanId);
   if(!plan) return;
   document.getElementById('plan-title').textContent = plan.name;
   document.getElementById('plan-desc').textContent = plan.desc || '';
-  const dayKeys = Object.keys(plan.days||{});
-  const orderedDays = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].filter(d=>dayKeys.includes(d)).concat(dayKeys.filter(d=>!['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].includes(d)));
-  document.getElementById('plan-days-detail').innerHTML = orderedDays.map(dayName=>{
-    const day = plan.days[dayName];
-    const blocks = day.blocks || [];
+  renderPlanDetailBody();
+}
+
+function switchPlanPhase(idx){ currentPhaseIdx = idx; renderPlanDetailBody(); }
+
+// Devuelve el "contenedor" editable (objeto con .blocks) para una sesión (plan por
+// fases) o un día (plan plano), creándolo vacío si todavía no existe.
+function getEditableContainer(plan, key){
+  if(plan.phases && plan.sessionSlots){
+    if(currentPhaseIdx >= plan.phases.length) currentPhaseIdx = 0;
+    const ph = plan.phases[currentPhaseIdx];
+    if(!ph.sessions) ph.sessions = {};
+    if(!ph.sessions[key]) ph.sessions[key] = {label:'', blocks:[]};
+    return ph.sessions[key];
+  }
+  if(!plan.days) plan.days = {};
+  if(!plan.days[key]) plan.days[key] = {label:'', blocks:[]};
+  return plan.days[key];
+}
+
+function renderPlanDetailBody(){
+  const plan = findPlan(currentPlanId);
+  if(!plan) return;
+  const isPhased = !!(plan.phases && plan.sessionSlots);
+  let headerHtml = '';
+  let containerEntries = []; // [{key, label, obj}] — key = slotId (por fases) o nombre de día (plano)
+
+  if(isPhased){
+    if(currentPhaseIdx >= plan.phases.length) currentPhaseIdx = 0;
+    headerHtml += `<div class="exd-tabs hscroll" style="margin-bottom:8px;">` +
+      plan.phases.map((ph,idx)=>`<div class="exd-tab ${idx===currentPhaseIdx?'active':''}" onclick="switchPlanPhase(${idx})">${ph.label||('Fase '+(idx+1))}</div>`).join('') +
+      `<div class="exd-tab" style="color:var(--green);" onclick="addPlanPhase()">+ Fase</div>` +
+      `</div>`;
+    const ph = plan.phases[currentPhaseIdx];
+    headerHtml += `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;padding:10px 12px;background:var(--bg);border-radius:10px;">
+      <div style="flex:1;font-size:12.5px;color:var(--text2);line-height:1.4;">
+        <b>${ph.label||'Fase'}</b>${ph.weeksRange?` · Semanas ${ph.weeksRange}`:''} · se repite ${ph.repeatWeeks||1} semana${(ph.repeatWeeks||1)===1?'':'s'} antes de encadenar la siguiente fase.
+        ${ph.desc?`<br>${ph.desc}`:''}
+      </div>
+      <button class="link-btn" style="font-size:11px;flex-shrink:0;" onclick="editPlanPhaseMeta(${currentPhaseIdx})">✏️ Fase</button>
+      ${plan.phases.length>1?`<button class="link-btn" style="font-size:11px;color:var(--coral);flex-shrink:0;" onclick="deletePlanPhase(${currentPhaseIdx})">🗑️</button>`:''}
+    </div>`;
+    headerHtml += `<div class="form-hint" style="margin-bottom:10px;">🗓️ Este programa no fija días de la semana: aquí solo defines QUÉ hay en cada sesión. El día de cada sesión se elige al programarlo (o se cambia luego desde "Programaciones en el calendario → 🗓️ Días").</div>`;
+    if(!ph.sessions) ph.sessions = {};
+    containerEntries = plan.sessionSlots.map(slot=>{
+      if(!ph.sessions[slot.id]) ph.sessions[slot.id] = {label:'', blocks:[]};
+      return {key: slot.id, label: slot.label, obj: ph.sessions[slot.id]};
+    });
+  } else {
+    if(!plan.days) plan.days = {};
+    const dayKeys = Object.keys(plan.days);
+    const orderedDays = WEEKDAY_LIST.filter(d=>dayKeys.includes(d)).concat(dayKeys.filter(d=>!WEEKDAY_LIST.includes(d)));
+    headerHtml += `<div style="margin-bottom:12px;"><button class="link-btn" onclick="convertPlanToPhased()">🔁 Convertir a programa por fases (sesiones sin día fijo)</button></div>`;
+    containerEntries = orderedDays.map(dayName=>({key:dayName, label:dayName, obj: plan.days[dayName]}));
+  }
+
+  const bodyHtml = containerEntries.map(({key,label,obj})=>{
+    const blocks = obj.blocks || [];
     const blocksHtml = blocks.map((blk, bIdx)=>{
       const itemsHtml = (blk.items||[]).map((it,idx)=>{
         const ex = getExercise(it.exId);
@@ -3050,48 +3246,59 @@ function openPlanDetail(planId){
             <div class="planned-name">${ex.icon} ${ex.name}</div>
             <div class="planned-sub">${formatItemNotes(it)}</div>
           </div>
-          <button class="link-btn" style="font-size:12px;flex-shrink:0;" onclick="event.stopPropagation();editPlanItemSets('${dayName}',${bIdx},${idx})">✏️</button>
-          <button class="planned-rm" onclick="removeFromPlanDay('${dayName}',${bIdx},${idx})">✕</button>
+          <button class="link-btn" style="font-size:12px;flex-shrink:0;" onclick="event.stopPropagation();editPlanItemSets('${key}',${bIdx},${idx})">✏️</button>
+          <button class="planned-rm" onclick="removeFromPlanDay('${key}',${bIdx},${idx})">✕</button>
         </div>`;
       }).join('') || `<div style="font-size:12px;color:var(--text3);padding:4px 0 4px 4px;">Sin ejercicios en este bloque.</div>`;
       return `<div style="margin:8px 0 12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px;">
           <div style="font-size:12.5px;font-weight:800;color:var(--text2);flex:1;">${blk.label||'Bloque'}</div>
-          <input type="time" class="form-input" title="Hora sugerida (para ordenar el calendario)" value="${blk.time||''}" style="width:92px;font-size:12px;padding:4px 6px;flex-shrink:0;" onchange="setPlanBlockTime('${dayName}',${bIdx}, this.value)">
-          <button class="link-btn" style="font-size:12px;" onclick="openAddToPlanDay('${dayName}',${bIdx})">+ Añadir</button>
-          <button class="link-btn" style="font-size:12px;" onclick="renamePlanBlock('${dayName}',${bIdx})">✏️</button>
-          <button class="link-btn" style="font-size:12px;color:var(--coral);" onclick="deletePlanBlock('${dayName}',${bIdx})">🗑️</button>
+          <input type="time" class="form-input" title="Hora sugerida (para ordenar el calendario)" value="${blk.time||''}" style="width:92px;font-size:12px;padding:4px 6px;flex-shrink:0;" onchange="setPlanBlockTime('${key}',${bIdx}, this.value)">
+          <button class="link-btn" style="font-size:12px;" onclick="openAddToPlanDay('${key}',${bIdx})">+ Añadir</button>
+          <button class="link-btn" style="font-size:12px;" onclick="renamePlanBlock('${key}',${bIdx})">✏️</button>
+          <button class="link-btn" style="font-size:12px;color:var(--coral);" onclick="deletePlanBlock('${key}',${bIdx})">🗑️</button>
         </div>
         ${itemsHtml}
       </div>`;
-    }).join('') || `<div style="font-size:12.5px;color:var(--text3);padding:6px 0;">Sin bloques en este día.</div>`;
+    }).join('') || `<div style="font-size:12.5px;color:var(--text3);padding:6px 0;">Sin bloques todavía.</div>`;
+
+    const titleRight = isPhased
+      ? `<button class="link-btn" style="font-size:11px;" onclick="renamePlanSession('${key}')">✏️</button>${plan.sessionSlots.length>1?`<button class="link-btn" style="font-size:11px;color:var(--coral);" onclick="deletePlanSession('${key}')">🗑️</button>`:''}`
+      : '';
 
     return `<div style="margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:6px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:14.5px;font-weight:800;">${dayName} <span style="font-weight:500;color:var(--text3);font-size:12px;">· ${day.label||''}</span></div>
-        <button class="link-btn" onclick="openAddBlockToDay('${dayName}')">+ Bloque</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div style="font-size:14.5px;font-weight:800;flex:1;">${label}${!isPhased?` <span style="font-weight:500;color:var(--text3);font-size:12px;">· ${obj.label||''}</span>`:''}</div>
+        ${titleRight}
+        <button class="link-btn" onclick="openAddBlockToDay('${key}')">+ Bloque</button>
       </div>
       ${blocksHtml}
     </div>`;
   }).join('');
 
-  openModal('modal-plandetail');
+  const footerHtml = isPhased ? `<div style="padding:6px 0 20px;"><button class="btn btn-secondary btn-block" onclick="addPlanSession()">+ Sesión</button></div>` : '';
+
+  document.getElementById('plan-days-detail').innerHTML = headerHtml + bodyHtml + footerHtml;
 }
 
-function openAddBlockToDay(dayName){
-  const label = prompt('Nombre del bloque (ej: Bloque Mañana, Bloque Box, Bloque Piscina):');
+function openAddBlockToDay(key){
+  const label = prompt('Nombre del bloque (ej: Calentamiento, Fuerza principal, Rehab):');
   if(!label) return;
   const plan = findPlan(currentPlanId);
-  if(!plan.days[dayName].blocks) plan.days[dayName].blocks = [];
-  plan.days[dayName].blocks.push({label, time: null, items:[]});
+  const container = getEditableContainer(plan, key);
+  if(!container.blocks) container.blocks = [];
+  container.blocks.push({label, time: null, items:[]});
+  syncPlanToFutureSchedule(plan.id);
   persist();
-  openPlanDetail(currentPlanId);
+  renderPlanDetailBody();
+  refreshScheduleViewsAfterSync();
 }
 
 // Se llama desde el <input type="time"> visible en la cabecera de cada bloque del programa.
-function setPlanBlockTime(dayName, blockIdx, value){
+function setPlanBlockTime(key, blockIdx, value){
   const plan = findPlan(currentPlanId);
-  const blk = plan.days[dayName].blocks[blockIdx];
+  const container = getEditableContainer(plan, key);
+  const blk = container.blocks[blockIdx];
   if(!blk) return;
   blk.time = value || null;
   syncPlanToFutureSchedule(plan.id);
@@ -3100,41 +3307,179 @@ function setPlanBlockTime(dayName, blockIdx, value){
   // No hace falta re-renderizar todo el modal: el propio input ya muestra el valor guardado.
 }
 
-function renamePlanBlock(dayName, blockIdx){
+function renamePlanBlock(key, blockIdx){
   const plan = findPlan(currentPlanId);
-  const blk = plan.days[dayName].blocks[blockIdx];
+  const container = getEditableContainer(plan, key);
+  const blk = container.blocks[blockIdx];
   const label = prompt('Nuevo nombre del bloque:', blk.label||'');
   if(!label || !label.trim()) return;
   blk.label = label.trim();
   syncPlanToFutureSchedule(plan.id);
   persist();
-  openPlanDetail(currentPlanId);
+  renderPlanDetailBody();
   refreshScheduleViewsAfterSync();
 }
 
-function deletePlanBlock(dayName, blockIdx){
+function deletePlanBlock(key, blockIdx){
   const plan = findPlan(currentPlanId);
-  const blk = plan.days[dayName].blocks[blockIdx];
+  const container = getEditableContainer(plan, key);
+  const blk = container.blocks[blockIdx];
   const n = (blk.items||[]).length;
   if(!confirm(`¿Eliminar el bloque "${blk.label||'Bloque'}"${n?` y sus ${n} ejercicio(s)`:''}?`)) return;
-  plan.days[dayName].blocks.splice(blockIdx,1);
+  container.blocks.splice(blockIdx,1);
   syncPlanToFutureSchedule(plan.id);
   persist();
-  openPlanDetail(currentPlanId);
+  renderPlanDetailBody();
   refreshScheduleViewsAfterSync();
+}
+
+/* ---------- GESTIÓN DE SESIONES (solo planes por fases) ---------- */
+function addPlanSession(){
+  const plan = findPlan(currentPlanId);
+  if(!plan.phases || !plan.sessionSlots) return;
+  const label = prompt('Nombre de la nueva sesión:', `Sesión ${plan.sessionSlots.length+1}`);
+  if(!label || !label.trim()) return;
+  const slotId = uid('slot');
+  plan.sessionSlots.push({id: slotId, label: label.trim()});
+  plan.phases.forEach(ph=>{ if(!ph.sessions) ph.sessions={}; ph.sessions[slotId] = {label:'', blocks:[]}; });
+  persist();
+  renderPlanDetailBody();
+  renderPlanes();
+  showToast('Sesión añadida ✓ (asígnale un día la próxima vez que programes o desde "🗓️ Días")');
+}
+function renamePlanSession(slotId){
+  const plan = findPlan(currentPlanId);
+  const slot = (plan.sessionSlots||[]).find(s=>s.id===slotId);
+  if(!slot) return;
+  const label = prompt('Nuevo nombre de la sesión:', slot.label||'');
+  if(!label || !label.trim()) return;
+  slot.label = label.trim();
+  persist();
+  renderPlanDetailBody();
+  renderPlanes();
+}
+function deletePlanSession(slotId){
+  const plan = findPlan(currentPlanId);
+  if(!plan.sessionSlots || plan.sessionSlots.length<=1){ showToast('Un programa por sesiones necesita al menos una sesión.'); return; }
+  const slot = plan.sessionSlots.find(s=>s.id===slotId);
+  if(!confirm(`¿Eliminar la sesión "${slot?slot.label:'Sesión'}" de TODAS las fases? Lo ya completado en el calendario no se toca; lo pendiente futuro se recalculará sin esta sesión.`)) return;
+  plan.sessionSlots = plan.sessionSlots.filter(s=>s.id!==slotId);
+  plan.phases.forEach(ph=>{ if(ph.sessions) delete ph.sessions[slotId]; });
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  renderPlanDetailBody();
+  renderPlanes();
+  refreshScheduleViewsAfterSync();
+  showToast('Sesión eliminada');
+}
+
+/* ---------- GESTIÓN DE FASES ---------- */
+function addPlanPhase(){
+  const plan = findPlan(currentPlanId);
+  if(!plan.phases) return;
+  const label = prompt('Nombre de la nueva fase (ej: Fase 5 · Mantenimiento):');
+  if(!label || !label.trim()) return;
+  const weeksRange = prompt('Rango de semanas (opcional, ej: 17-20):', '') || '';
+  const repeatWeeks = Math.max(1, parseInt(prompt('¿Cuántas semanas se repite esta fase antes de pasar a la siguiente?', '4')) || 4);
+  const desc = prompt('Descripción / objetivo de esta fase (opcional):', '') || '';
+  const sessions = {};
+  (plan.sessionSlots||[]).forEach(slot=>{ sessions[slot.id] = {label:'', blocks:[]}; });
+  plan.phases.push({ label: label.trim(), weeksRange: weeksRange.trim(), repeatWeeks, desc: desc.trim(), sessions });
+  currentPhaseIdx = plan.phases.length - 1;
+  persist();
+  renderPlanDetailBody();
+  renderPlanes();
+  showToast('Fase añadida ✓');
+}
+
+function editPlanPhaseMeta(idx){
+  const plan = findPlan(currentPlanId);
+  if(!plan.phases || !plan.phases[idx]) return;
+  const ph = plan.phases[idx];
+  const label = prompt('Nombre de la fase:', ph.label||'');
+  if(label===null) return;
+  const weeksRange = prompt('Rango de semanas (opcional):', ph.weeksRange||'');
+  if(weeksRange===null) return;
+  const repeatWeeksRaw = prompt('¿Cuántas semanas se repite esta fase antes de pasar a la siguiente?', ph.repeatWeeks||4);
+  if(repeatWeeksRaw===null) return;
+  const desc = prompt('Descripción / objetivo de esta fase:', ph.desc||'');
+  if(desc===null) return;
+  ph.label = label.trim() || ph.label;
+  ph.weeksRange = weeksRange.trim();
+  ph.repeatWeeks = Math.max(1, parseInt(repeatWeeksRaw)||1);
+  ph.desc = desc.trim();
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  renderPlanDetailBody();
+  renderPlanes();
+  refreshScheduleViewsAfterSync();
+  showToast('Fase actualizada ✓');
+}
+
+function deletePlanPhase(idx){
+  const plan = findPlan(currentPlanId);
+  if(!plan.phases || plan.phases.length<=1){ showToast('Un programa por fases necesita al menos una fase.'); return; }
+  if(!confirm(`¿Eliminar la fase "${plan.phases[idx].label||'Fase'}"? Lo ya completado en el calendario no se toca; lo pendiente futuro de esta fase se recalculará con las fases restantes.`)) return;
+  plan.phases.splice(idx,1);
+  currentPhaseIdx = Math.min(currentPhaseIdx, plan.phases.length-1);
+  syncPlanToFutureSchedule(plan.id);
+  persist();
+  renderPlanDetailBody();
+  renderPlanes();
+  refreshScheduleViewsAfterSync();
+  showToast('Fase eliminada');
+}
+
+// Migra un programa "plano" (un único `days` de siempre, con día de la semana fijo) al
+// nuevo formato por fases con sesiones libres: cada día con contenido pasa a ser una
+// "sesión" de la Fase 1, sin día de la semana asignado todavía (se elige al programar).
+function convertPlanToPhased(){
+  const plan = findPlan(currentPlanId);
+  if(!plan || plan.phases) return;
+  if(!confirm('¿Convertir este programa a formato por fases con sesiones libres (sin día fijo)? Cada día con contenido pasará a ser una sesión de la Fase 1; el día de la semana de cada sesión se elige al programarlo y se puede cambiar cuando quieras, sin tocar el programa.')) return;
+  const dayKeys = WEEKDAY_LIST.filter(d=> plan.days && plan.days[d] && (plan.days[d].blocks||[]).length);
+  if(!dayKeys.length){ showToast('Este programa no tiene ningún día con ejercicios todavía.'); return; }
+  const repeatWeeksRaw = prompt('¿Cuántas semanas dura/se repite esta primera fase?', plan.weeks || 4);
+  const repeatWeeks = Math.max(1, parseInt(repeatWeeksRaw)||4);
+  const sessionSlots = dayKeys.map((d,i)=>({id: uid('slot'), label: `Sesión ${i+1}`}));
+  const sessions = {};
+  sessionSlots.forEach((slot,i)=>{ sessions[slot.id] = plan.days[dayKeys[i]]; });
+  plan.sessionSlots = sessionSlots;
+  plan.phases = [{
+    label: plan.weeks ? `Fase 1 (Sem ${plan.weeks})` : 'Fase 1',
+    weeksRange: plan.weeks || '',
+    repeatWeeks,
+    desc: '',
+    sessions
+  }];
+  delete plan.days;
+  delete plan.weeks;
+  currentPhaseIdx = 0;
+  persist();
+  renderPlanDetailBody();
+  renderPlanes();
+  showToast('Programa convertido ✓ (usa "+ Fase" / "+ Sesión" para seguir ampliándolo)');
 }
 
 /* ---------- EDITAR / ELIMINAR PROGRAMA COMPLETO ---------- */
-function editPlanPhaseFromCalendar(planId){
+function editPlanPhaseFromCalendar(planId, phaseIdx){
   currentPlanId = planId;
-  openEditPlanModal();
+  const plan = findPlan(planId);
+  if(plan && plan.phases && phaseIdx!==undefined && phaseIdx!==null && plan.phases[phaseIdx]){
+    currentPhaseIdx = phaseIdx;
+    editPlanPhaseMeta(phaseIdx);
+  } else {
+    openEditPlanModal();
+  }
 }
 
 function openEditPlanModal(){
   const plan = findPlan(currentPlanId);
   if(!plan) return;
   document.getElementById('ep-name').value = plan.name || '';
-  document.getElementById('ep-weeks').value = plan.weeks || '';
+  document.getElementById('ep-weeks').value = plan.phases ? '' : (plan.weeks || '');
+  document.getElementById('ep-weeks').disabled = !!plan.phases;
+  document.getElementById('ep-weeks').placeholder = plan.phases ? 'Este programa gestiona las semanas por fase' : 'Ej: 1-4';
   document.getElementById('ep-desc').value = plan.desc || '';
   openModal('modal-editplan');
 }
@@ -3145,11 +3490,11 @@ function saveEditPlan(){
   const name = document.getElementById('ep-name').value.trim();
   if(!name){ showToast('Ponle un nombre al programa'); return; }
   plan.name = name;
-  plan.weeks = document.getElementById('ep-weeks').value.trim();
+  if(!plan.phases) plan.weeks = document.getElementById('ep-weeks').value.trim();
   plan.desc = document.getElementById('ep-desc').value.trim();
   persist();
   closeModal('modal-editplan');
-  openPlanDetail(currentPlanId);
+  renderPlanDetailAll();
   renderPlanes();
   showToast('Programa actualizado ✓');
 }
@@ -3158,22 +3503,22 @@ function deleteCurrentPlan(){
   const plan = findPlan(currentPlanId);
   if(!plan) return;
   if(!confirm(`¿Eliminar el programa "${plan.name}" por completo? También se eliminarán los ejercicios programados desde este plan en el calendario.`)) return;
-  
-  // Si es un plan de fábrica (Fase 1/2/3), recordamos el borrado para que
-  // mergeDefaults() no lo vuelva a añadir en el próximo refresco o al importar un backup.
+
+  // Si es un plan de fábrica, recordamos el borrado para que mergeDefaults() no lo
+  // vuelva a añadir en el próximo refresco o al importar un backup.
   if(DEFAULT_PROGRAMS.some(d=>d.id===plan.id) && !state.deletedDefaults.programs.includes(plan.id)){
     state.deletedDefaults.programs.push(plan.id);
   }
   // Borrar el plan
   state.programs = state.programs.filter(p=>p.id!==plan.id);
   state.customPlans = state.customPlans.filter(p=>p.id!==plan.id);
-  
+
   // Limpiar ejercicios en el calendario que vinieron de este plan
   Object.keys(state.schedule).forEach(dateStr=>{
     state.schedule[dateStr] = state.schedule[dateStr].filter(item => item.fromPlan !== plan.id);
     if(!state.schedule[dateStr].length) delete state.schedule[dateStr];
   });
-  
+
   persist();
   closeModal('modal-plandetail');
   renderPlanes();
@@ -3184,59 +3529,127 @@ function deleteCurrentPlan(){
 const DAY_NAME_TO_OFFSET = {'Lunes':0,'Martes':1,'Miércoles':2,'Jueves':3,'Viernes':4,'Sábado':5,'Domingo':6};
 
 // Rellena en el calendario "weeks" semanas del plan, empezando en el lunes "mondayDate",
-// todas bajo el mismo assignId (así se pueden borrar/identificar como un único lote,
-// aunque hayan sido generadas en distintos momentos por el ciclado automático).
-function fillPlanCycle(plan, mondayDate, weeks, assignId){
+// todas bajo el mismo assignId. Para programas por fases (plan.sessionSlots), `dayMap`
+// dice a qué día de la semana va cada sesión (elegido en el momento de programar, no
+// fijado en el plan); cada semana resuelve automáticamente qué fase le toca y encadena
+// la siguiente sin que haya que programar cada bloque de periodización por separado.
+// Para planes planos (sin fases), se comporta exactamente igual que siempre.
+function fillPlanCycle(plan, mondayDate, weeks, assignId, dayMap){
   let count=0, firstDs=null, lastDs=null;
   for(let w=0; w<weeks; w++){
-    Object.keys(plan.days).forEach(dayName=>{
-      const offset = DAY_NAME_TO_OFFSET[dayName];
-      if(offset===undefined) return;
-      const d = new Date(mondayDate); d.setDate(mondayDate.getDate() + w*7 + offset);
-      const ds = dateToStr(d);
-      if(!firstDs || ds<firstDs) firstDs=ds;
-      if(!lastDs || ds>lastDs) lastDs=ds;
-      (plan.days[dayName].blocks||[]).forEach(blk=>{
-        (blk.items||[]).forEach(it=>{
-          addScheduleItem(ds, it.exId, it.notes, plan.id, blk.label, assignId, it.sets, blk.time);
-          count++;
+    if(plan.phases && plan.sessionSlots){
+      const phaseInfo = getPlanPhaseForWeekOffset(plan, w);
+      const phase = plan.phases[phaseInfo.idx];
+      plan.sessionSlots.forEach(slot=>{
+        const session = phase.sessions && phase.sessions[slot.id];
+        if(!session) return;
+        const slotDays = (dayMap && dayMap[slot.id]) || [];
+        slotDays.forEach(dayName=>{
+          const offset = DAY_NAME_TO_OFFSET[dayName];
+          if(offset===undefined) return;
+          const d = new Date(mondayDate); d.setDate(mondayDate.getDate() + w*7 + offset);
+          const ds = dateToStr(d);
+          if(!firstDs || ds<firstDs) firstDs=ds;
+          if(!lastDs || ds>lastDs) lastDs=ds;
+          (session.blocks||[]).forEach(blk=>{
+            (blk.items||[]).forEach(it=>{
+              addScheduleItem(ds, it.exId, it.notes, plan.id, blk.label, assignId, it.sets, blk.time, phaseInfo);
+              count++;
+            });
+          });
         });
       });
-    });
+    } else {
+      Object.keys(plan.days||{}).forEach(dayName=>{
+        const offset = DAY_NAME_TO_OFFSET[dayName];
+        if(offset===undefined) return;
+        const d = new Date(mondayDate); d.setDate(mondayDate.getDate() + w*7 + offset);
+        const ds = dateToStr(d);
+        if(!firstDs || ds<firstDs) firstDs=ds;
+        if(!lastDs || ds>lastDs) lastDs=ds;
+        (plan.days[dayName].blocks||[]).forEach(blk=>{
+          (blk.items||[]).forEach(it=>{
+            addScheduleItem(ds, it.exId, it.notes, plan.id, blk.label, assignId, it.sets, blk.time, null);
+            count++;
+          });
+        });
+      });
+    }
   }
   return {count, firstDs, lastDs};
 }
 
-// Cuando se edita un plan (añadir/quitar ejercicios, renombrar o borrar bloques,
-// cambiar series/notas/hora...), los días YA programados en el calendario habían
-// quedado como una "foto fija" del plan en el momento de asignarlo, así que no se
-// enteraban del cambio. Esta función recorre el calendario y regenera, para cada
-// asignación de este plan, los ejercicios de los días de HOY en adelante que aún
-// no se han marcado como hechos — usando siempre el contenido actual del plan.
-// El pasado y lo ya completado nunca se tocan, para no reescribir el historial.
+// Regenera, para UNA asignación concreta, todos sus días de HOY en adelante que aún no
+// se han marcado como hechos — usando siempre el contenido actual del plan (fase que
+// toque esa semana) y el reparto de días actual de esa asignación (assignment.dayMap).
+// El pasado y lo ya completado nunca se tocan. Se llama tanto al editar el CONTENIDO
+// de un plan (añadir/quitar ejercicios, bloques, sesiones o fases) como al cambiar el
+// DÍA de la semana de una sesión desde "🗓️ Días" — ambos casos son "recalcular lo
+// pendiente con la configuración de hoy".
+function regenerateFutureAssignmentItems(planId, assignId){
+  const plan = findPlan(planId);
+  const assignment = (state.assignments||[]).find(a=>a.id===assignId);
+  if(!plan || !assignment) return;
+  const today = todayStr();
+  Object.keys(state.schedule).forEach(ds=>{
+    if(ds < today) return;
+    state.schedule[ds] = (state.schedule[ds]||[]).filter(it=>!(it.assignId===assignId && !it.done));
+    if(!state.schedule[ds].length) delete state.schedule[ds];
+  });
+  if(!assignment.startMonday) return;
+  const startMonday = strToDate(assignment.startMonday);
+  const totalWeeksFilled = (assignment.weeksPerCycle||4) * (assignment.cyclesGenerated||1);
+  const dayMap = assignment.dayMap || {};
+  for(let w=0; w<totalWeeksFilled; w++){
+    const weekMonday = new Date(startMonday); weekMonday.setDate(weekMonday.getDate()+w*7);
+    if(plan.phases && plan.sessionSlots){
+      const phaseInfo = getPlanPhaseForWeekOffset(plan, w);
+      const phase = plan.phases[phaseInfo.idx];
+      plan.sessionSlots.forEach(slot=>{
+        const session = phase.sessions && phase.sessions[slot.id];
+        if(!session) return;
+        (dayMap[slot.id]||[]).forEach(dayName=>{
+          const offset = DAY_NAME_TO_OFFSET[dayName];
+          if(offset===undefined) return;
+          const d = new Date(weekMonday); d.setDate(weekMonday.getDate()+offset);
+          const ds = dateToStr(d);
+          if(ds < today) return; // no reescribir el pasado
+          (session.blocks||[]).forEach(blk=>{
+            (blk.items||[]).forEach(it=>{
+              addScheduleItem(ds, it.exId, it.notes, plan.id, blk.label, assignId, it.sets, blk.time, phaseInfo);
+            });
+          });
+        });
+      });
+    } else {
+      Object.keys(plan.days||{}).forEach(dayName=>{
+        const offset = DAY_NAME_TO_OFFSET[dayName];
+        if(offset===undefined) return;
+        const d = new Date(weekMonday); d.setDate(weekMonday.getDate()+offset);
+        const ds = dateToStr(d);
+        if(ds < today) return;
+        (plan.days[dayName].blocks||[]).forEach(blk=>{
+          (blk.items||[]).forEach(it=>{
+            addScheduleItem(ds, it.exId, it.notes, plan.id, blk.label, assignId, it.sets, blk.time, null);
+          });
+        });
+      });
+    }
+  }
+}
+
+// Cuando se edita el CONTENIDO de un plan, recorre todas sus asignaciones activas y
+// regenera cada una (ver regenerateFutureAssignmentItems). Sustituye a la sincronización
+// antigua que solo sabía de planes con día de la semana fijo.
 function syncPlanToFutureSchedule(planId){
   const plan = findPlan(planId);
   if(!plan) return;
-  const today = todayStr();
-  Object.keys(state.schedule).forEach(ds=>{
-    if(ds < today) return; // no tocar el historial
-    const items = state.schedule[ds] || [];
-    const assignIds = [...new Set(items.filter(it=>it.fromPlan===plan.id).map(it=>it.assignId))];
-    if(!assignIds.length) return;
-    const dayName = WEEKDAY_ES[(strToDate(ds).getDay()+6)%7];
-    const blocks = (plan.days[dayName] && plan.days[dayName].blocks) || [];
-    assignIds.forEach(assignId=>{
-      // quitar solo los pendientes (no hechos) de este plan+asignación en este día
-      state.schedule[ds] = (state.schedule[ds]||[]).filter(it=> !(it.fromPlan===plan.id && it.assignId===assignId && !it.done));
-      // volver a generarlos a partir del contenido actual del plan
-      blocks.forEach(blk=>{
-        (blk.items||[]).forEach(it=>{
-          addScheduleItem(ds, it.exId, it.notes, plan.id, blk.label, assignId, it.sets, blk.time);
-        });
-      });
-    });
-    if(!state.schedule[ds] || !state.schedule[ds].length) delete state.schedule[ds];
+  const relevantAssignIds = new Set();
+  Object.values(state.schedule).forEach(items=>{
+    items.forEach(it=>{ if(it.fromPlan===plan.id && it.assignId) relevantAssignIds.add(it.assignId); });
   });
+  (state.assignments||[]).forEach(a=>{ if(a.planId===plan.id) relevantAssignIds.add(a.id); });
+  relevantAssignIds.forEach(assignId=> regenerateFutureAssignmentItems(plan.id, assignId));
 }
 
 // Refresca calendario/dashboard si están visibles, tras sincronizar un plan.
@@ -3257,26 +3670,62 @@ function setAssignCyclic(val){
   document.getElementById('assign-cyclelimit-wrap').style.display = val ? '' : 'none';
 }
 
+let assignDayMap = {};
 function openAssignPlanModal(){
   document.getElementById('assign-start-date').value = todayStr();
-  document.getElementById('assign-weeks').value = 4;
+  const plan = findPlan(currentPlanId);
+  const totalWeeks = plan ? getPlanTotalWeeks(plan) : null;
+  document.getElementById('assign-weeks').value = totalWeeks || 4;
   document.getElementById('assign-cyclelimit').value = '';
   setAssignCyclic(false);
+
+  const wrap = document.getElementById('assign-daymap-wrap');
+  if(plan && plan.sessionSlots && plan.sessionSlots.length){
+    wrap.style.display = '';
+    assignDayMap = {};
+    plan.sessionSlots.forEach((slot,i)=>{ assignDayMap[slot.id] = [WEEKDAY_LIST[i % 7]]; }); // reparto sugerido: Lunes, Martes... editable antes de confirmar
+    renderAssignDaymapBody();
+  } else {
+    wrap.style.display = 'none';
+    assignDayMap = {};
+  }
   openModal('modal-assignplan');
+}
+function renderAssignDaymapBody(){
+  const plan = findPlan(currentPlanId);
+  document.getElementById('assign-daymap-body').innerHTML = plan.sessionSlots.map(slot=>`
+    <div style="margin-bottom:10px;">
+      <div style="font-size:12.5px;font-weight:700;margin-bottom:5px;">${slot.label}</div>
+      <div class="toggle-row">${renderDayPillsRow(slot.id, assignDayMap[slot.id], 'toggleAssignDaymapDay')}</div>
+    </div>
+  `).join('');
+}
+function toggleAssignDaymapDay(slotId, day){
+  if(!assignDayMap[slotId]) assignDayMap[slotId] = [];
+  const idx = assignDayMap[slotId].indexOf(day);
+  if(idx>=0) assignDayMap[slotId].splice(idx,1); else assignDayMap[slotId].push(day);
+  renderAssignDaymapBody();
 }
 
 function confirmAssignPlan(){
   const plan = findPlan(currentPlanId);
   if(!plan) return;
   const startStr = document.getElementById('assign-start-date').value;
-  const weeks = Math.max(1, Math.min(52, parseInt(document.getElementById('assign-weeks').value)||4));
+  const weeks = Math.max(1, Math.min(104, parseInt(document.getElementById('assign-weeks').value)||4));
   const start = strToDate(startStr);
   // find monday of the start week
   const startOffset = (start.getDay()+6)%7;
   const monday = new Date(start); monday.setDate(start.getDate()-startOffset);
 
+  const isSessioned = !!(plan.sessionSlots && plan.sessionSlots.length);
+  if(isSessioned && Object.values(assignDayMap).every(arr=>!arr.length)){
+    showToast('Asigna al menos un día a alguna sesión antes de programar.');
+    return;
+  }
+
   const assignId = uid('assign');
-  const {count, firstDs, lastDs} = fillPlanCycle(plan, monday, weeks, assignId);
+  const dayMap = isSessioned ? JSON.parse(JSON.stringify(assignDayMap)) : null;
+  const {count, firstDs, lastDs} = fillPlanCycle(plan, monday, weeks, assignId, dayMap);
 
   if(!state.assignments) state.assignments = [];
   const cyclic = assignCyclicVal;
@@ -3285,7 +3734,8 @@ function confirmAssignPlan(){
   state.assignments.push({
     id: assignId, planId: plan.id, planName: plan.name, startDate: firstDs, endDate: lastDs, weeks, createdAt: Date.now(),
     cyclic, cycleLimit, cyclesGenerated: 1,
-    startMonday: dateToStr(monday), weeksPerCycle: weeks
+    startMonday: dateToStr(monday), weeksPerCycle: weeks,
+    dayMap: dayMap || {}
   });
   persist();
   closeModal('modal-assignplan');
@@ -3293,6 +3743,46 @@ function confirmAssignPlan(){
   showToast(`Plan programado: ${count} ejercicios añadidos ✓`);
   if(currentScreen==='calendario') renderCalendario();
   if(currentScreen==='dashboard') renderDashboard();
+  if(currentScreen==='planes') renderPlanes();
+}
+
+/* ---------- CAMBIAR EL DÍA DE UNA PROGRAMACIÓN YA EXISTENTE ---------- */
+let editDaymapAssignId = null;
+let editDaymapTemp = {};
+function openEditDayMapModal(assignId){
+  const assignment = (state.assignments||[]).find(a=>a.id===assignId);
+  const plan = assignment ? findPlan(assignment.planId) : null;
+  if(!assignment || !plan || !plan.sessionSlots || !plan.sessionSlots.length){ showToast('Este programa no usa sesiones con día editable.'); return; }
+  editDaymapAssignId = assignId;
+  editDaymapTemp = JSON.parse(JSON.stringify(assignment.dayMap||{}));
+  renderEditDaymapBody(plan);
+  openModal('modal-editdaymap');
+}
+function renderEditDaymapBody(plan){
+  document.getElementById('editdaymap-body').innerHTML = plan.sessionSlots.map(slot=>`
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12.5px;font-weight:700;margin-bottom:5px;">${slot.label}</div>
+      <div class="toggle-row">${renderDayPillsRow(slot.id, editDaymapTemp[slot.id], 'toggleEditDaymapDay')}</div>
+    </div>
+  `).join('');
+}
+function toggleEditDaymapDay(slotId, day){
+  if(!editDaymapTemp[slotId]) editDaymapTemp[slotId] = [];
+  const idx = editDaymapTemp[slotId].indexOf(day);
+  if(idx>=0) editDaymapTemp[slotId].splice(idx,1); else editDaymapTemp[slotId].push(day);
+  const assignment = (state.assignments||[]).find(a=>a.id===editDaymapAssignId);
+  renderEditDaymapBody(findPlan(assignment.planId));
+}
+function confirmEditDayMap(){
+  const assignment = (state.assignments||[]).find(a=>a.id===editDaymapAssignId);
+  if(!assignment) return;
+  assignment.dayMap = editDaymapTemp;
+  regenerateFutureAssignmentItems(assignment.planId, assignment.id);
+  persist();
+  closeModal('modal-editdaymap');
+  renderPlanes();
+  refreshScheduleViewsAfterSync();
+  showToast('Días actualizados ✓');
 }
 
 /* ---------- PLANES PROPIOS ---------- */
@@ -3316,18 +3806,20 @@ function saveNewPlan(){
   persist();
   closeModal('modal-newplan');
   renderPlanes();
-  showToast('Programa creado ✓ (2 bloques por día: puedes añadir más con "+ Bloque")');
+  showToast('Programa creado ✓ (2 bloques por día: puedes añadir más con "+ Bloque", o convertirlo a fases con sesiones libres desde su detalle)');
   openPlanDetail(plan.id);
 }
 
-let pdaTargetDay = null;
+let pdaTargetKey = null;
 let pdaTargetBlock = null;
 let pdaSelectedExId = null;
-function openAddToPlanDay(dayName, blockIdx){
-  pdaTargetDay = dayName;
+function openAddToPlanDay(key, blockIdx){
+  pdaTargetKey = key;
   pdaTargetBlock = blockIdx;
   pdaSelectedExId = null;
-  document.getElementById('pda-title').textContent = 'Añadir a '+dayName;
+  const plan = findPlan(currentPlanId);
+  const slotLabel = plan.sessionSlots ? (plan.sessionSlots.find(s=>s.id===key)||{}).label : key;
+  document.getElementById('pda-title').textContent = 'Añadir a '+(slotLabel||key);
   document.getElementById('pda-search').value='';
   document.getElementById('pda-notes').value='';
   document.getElementById('pda-sets').value='';
@@ -3346,30 +3838,35 @@ function pdaSelect(id){ pdaSelectedExId = id; renderPdaList(); }
 function confirmAddToPlanDay(){
   if(!pdaSelectedExId){ showToast('Elige un ejercicio'); return; }
   const plan = findPlan(currentPlanId);
+  const container = getEditableContainer(plan, pdaTargetKey);
   const notes = document.getElementById('pda-notes').value.trim();
   const setsVal = parseInt(document.getElementById('pda-sets').value)||null;
-  plan.days[pdaTargetDay].blocks[pdaTargetBlock].items.push({exId: pdaSelectedExId, notes, sets: setsVal});
+  if(!container.blocks) container.blocks = [];
+  if(!container.blocks[pdaTargetBlock]) container.blocks[pdaTargetBlock] = {label:'Bloque', time:null, items:[]};
+  container.blocks[pdaTargetBlock].items.push({exId: pdaSelectedExId, notes, sets: setsVal});
   syncPlanToFutureSchedule(plan.id);
   persist();
   closeModal('modal-planday-add');
-  openPlanDetail(currentPlanId);
+  renderPlanDetailBody();
   refreshScheduleViewsAfterSync();
   showToast('Añadido al programa ✓');
 }
-function removeFromPlanDay(dayName, blockIdx, idx){
+function removeFromPlanDay(key, blockIdx, idx){
   const plan = findPlan(currentPlanId);
-  plan.days[dayName].blocks[blockIdx].items.splice(idx,1);
+  const container = getEditableContainer(plan, key);
+  container.blocks[blockIdx].items.splice(idx,1);
   syncPlanToFutureSchedule(plan.id);
   persist();
-  openPlanDetail(currentPlanId);
+  renderPlanDetailBody();
   refreshScheduleViewsAfterSync();
 }
 
-// Edición rápida de "nº de series" y notas de un ejercicio ya añadido a un día del plan.
+// Edición rápida de "nº de series" y notas de un ejercicio ya añadido a una sesión/día del plan.
 // Así siempre se puede corregir/rellenar el número de series aunque falte en la nota original.
-function editPlanItemSets(dayName, blockIdx, idx){
+function editPlanItemSets(key, blockIdx, idx){
   const plan = findPlan(currentPlanId);
-  const it = plan.days[dayName].blocks[blockIdx].items[idx];
+  const container = getEditableContainer(plan, key);
+  const it = container.blocks[blockIdx].items[idx];
   const setsInput = prompt('Nº de series para este ejercicio (déjalo vacío si no aplica):', it.sets||'');
   if(setsInput===null) return;
   const notesInput = prompt('Notas (reps, RPE, descanso, carga...):', it.notes||'');
@@ -3378,7 +3875,7 @@ function editPlanItemSets(dayName, blockIdx, idx){
   it.notes = notesInput.trim();
   syncPlanToFutureSchedule(plan.id);
   persist();
-  openPlanDetail(currentPlanId);
+  renderPlanDetailBody();
   refreshScheduleViewsAfterSync();
   showToast('Ejercicio actualizado ✓');
 }
