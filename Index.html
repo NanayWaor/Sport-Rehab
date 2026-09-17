@@ -583,6 +583,14 @@ button,input,textarea,select{font-family:inherit;}
         <div id="task-subtasks-list"></div>
         <button type="button" class="btn btn-secondary" style="margin-top:4px;" onclick="addTaskSubtask()">+ Añadir subtarea</button>
       </div>
+      <div class="form-group" id="task-completion-mode-group" style="display:none;">
+        <label class="form-label">Modo de finalización (tarea y sus subtareas)</label>
+        <div class="toggle-row" id="task-completion-mode-row" style="flex-wrap:wrap;">
+          <div class="toggle-pill" data-mode="reset" onclick="setTaskCompletionMode('reset')">🔁 Reinicia cada día</div>
+          <div class="toggle-pill" data-mode="fixed" onclick="setTaskCompletionMode('fixed')">📌 Fijo (tachable para siempre)</div>
+          <div class="toggle-pill" data-mode="until_done" onclick="setTaskCompletionMode('until_done')">✅ Hasta completarla</div>
+        </div>
+      </div>
       <div class="form-group">
         <label class="form-label">Hora (opcional, para ordenar el día)</label>
         <input class="form-input" type="time" id="task-time">
@@ -1027,9 +1035,10 @@ function freshState(){
     customPlans: [],
     schedule: {},      // { 'YYYY-MM-DD': [ {id, exId, notes, sets, done} ] }
     painLogs: {},       // { 'YYYY-MM-DD': { codo, hombro, tunel, rodilla, notes } }
-    tasks: [],          // [{id, title, notes, time, kind:'puntual'|'recurrente', date, freq, every, weekdays, monthDay, annualDay, annualMonth, startDate, endDate, archived, subtasks:[{id,title}]}]
-    taskDone: {},        // { 'YYYY-MM-DD': { taskId: true } } — estado "hecho" de cada ocurrencia de tarea
-    subtaskDone: {},     // { 'YYYY-MM-DD': { taskId: { subtaskId: true } } } — estado "hecho" de cada subtarea, por ocurrencia (se resetea en cada repetición)
+    tasks: [],          // [{id, title, notes, time, kind:'puntual'|'recurrente', date, freq, every, weekdays, monthDay, annualDay, annualMonth, startDate, endDate, archived,
+                        //   completionMode:'reset'|'fixed'|'until_done', done, completedOn, subtasks:[{id,title,done,completedOn}]}]
+    taskDone: {},        // { 'YYYY-MM-DD': { taskId: true } } — estado "hecho" por ocurrencia, solo para completionMode 'reset'
+    subtaskDone: {},     // { 'YYYY-MM-DD': { taskId: { subtaskId: true } } } — ídem, para subtareas en modo 'reset'
     logs: [],           // [{id, exId, date, sets:[{weight,reps}], comment, scheduleItemId, createdAt}]
     dropbox: { appKey:'', redirectUri:'', accessToken:'', refreshToken:'', expiresAt:0, connected:false, lastSync:0, codeVerifier:'' },
     // IDs de ejercicios/planes/categorías DE FÁBRICA que el usuario ha borrado a propósito.
@@ -2592,8 +2601,12 @@ function renderCalDayPanel(ds){
 // ¿Esta tarea "toca" en esta fecha concreta? Puntual: solo su fecha exacta.
 // Recurrente: según su frecuencia (diario/semanal/mensual/anual), respetando
 // fecha de inicio/fin opcionales.
+// Además, en modo 'until_done': si ya se marcó como hecha, deja de "tocar" a partir
+// del día siguiente a aquel en que se completó (pero ese mismo día sigue apareciendo,
+// tachada, para que se vea que se cumplió).
 function taskOccursOnDate(task, dateStr){
   if(!task || task.archived) return false;
+  if(task.completionMode==='until_done' && task.done && task.completedOn && dateStr>task.completedOn) return false;
   if(task.kind==='puntual') return task.date===dateStr;
   const d = strToDate(dateStr);
   if(task.startDate){ const start = strToDate(task.startDate); if(d<start) return false; }
@@ -2623,31 +2636,72 @@ function taskOccursOnDate(task, dateStr){
   return false;
 }
 
+// Estado "hecho" de la tarea para una fecha concreta, según su modo de finalización:
+// 'reset' consulta el mapa por día (state.taskDone); 'fixed'/'until_done' consultan
+// el propio booleano de la tarea, que no depende de la fecha.
+function isTaskDoneOn(task, dateStr){
+  if(task.completionMode==='fixed' || task.completionMode==='until_done') return !!task.done;
+  return !!(state.taskDone && state.taskDone[dateStr] && state.taskDone[dateStr][task.id]);
+}
+
+// Subtareas visibles de una tarea para una fecha concreta: en modo 'until_done', una
+// subtarea ya completada deja de mostrarse a partir del día siguiente a su finalización
+// (el mismo día en que se completó sí se sigue mostrando, tachada).
+function visibleSubtasksForDate(task, dateStr){
+  return (task.subtasks||[]).filter(s=>{
+    if(task.completionMode==='until_done' && s.done && s.completedOn && dateStr>s.completedOn) return false;
+    return true;
+  });
+}
+
+// Estado "hecho" de una subtarea para una fecha concreta (mismo criterio que isTaskDoneOn).
+function isSubtaskDoneOn(task, subtaskId, dateStr){
+  if(task.completionMode==='fixed' || task.completionMode==='until_done'){
+    const s = (task.subtasks||[]).find(s=>s.id===subtaskId);
+    return !!(s && s.done);
+  }
+  return !!(state.subtaskDone && state.subtaskDone[dateStr] && state.subtaskDone[dateStr][task.id] && state.subtaskDone[dateStr][task.id][subtaskId]);
+}
+
 // Todas las tareas que tocan en una fecha, con su estado "hecho" para ese día concreto,
 // ordenadas por hora (las que no tienen hora van al final).
 function getTasksForDate(dateStr){
   return (state.tasks||[])
     .filter(t=>taskOccursOnDate(t, dateStr))
-    .map(t=>({ task:t, done: !!(state.taskDone && state.taskDone[dateStr] && state.taskDone[dateStr][t.id]) }))
+    .map(t=>({ task:t, done: isTaskDoneOn(t, dateStr) }))
     .sort((a,b)=>(a.task.time||'99:99').localeCompare(b.task.time||'99:99'));
 }
 
 function toggleTaskDone(taskId, dateStr){
-  if(!state.taskDone) state.taskDone = {};
-  if(!state.taskDone[dateStr]) state.taskDone[dateStr] = {};
-  state.taskDone[dateStr][taskId] = !state.taskDone[dateStr][taskId];
+  const task = (state.tasks||[]).find(t=>t.id===taskId);
+  if(!task) return;
+  if(task.completionMode==='fixed' || task.completionMode==='until_done'){
+    task.done = !task.done;
+    task.completedOn = task.done ? dateStr : null;
+  } else {
+    if(!state.taskDone) state.taskDone = {};
+    if(!state.taskDone[dateStr]) state.taskDone[dateStr] = {};
+    state.taskDone[dateStr][taskId] = !state.taskDone[dateStr][taskId];
+  }
   persist();
   renderCurrentScreenSoft();
 }
 
-// Estado "hecho" de una subtarea concreta, para una ocurrencia (fecha) concreta de la
-// tarea. Al ser recurrente, cada repetición tiene su propio estado, así que se resetea
-// en cada nueva ocurrencia (igual que taskDone, pero un nivel más).
+// Estado "hecho" de una subtarea concreta. En modo 'reset' se guarda por fecha (cada
+// repetición tiene su propio estado); en 'fixed'/'until_done' se guarda en la propia
+// subtarea (no depende del día en que se marque).
 function toggleSubtaskDone(taskId, subtaskId, dateStr){
-  if(!state.subtaskDone) state.subtaskDone = {};
-  if(!state.subtaskDone[dateStr]) state.subtaskDone[dateStr] = {};
-  if(!state.subtaskDone[dateStr][taskId]) state.subtaskDone[dateStr][taskId] = {};
-  state.subtaskDone[dateStr][taskId][subtaskId] = !state.subtaskDone[dateStr][taskId][subtaskId];
+  const task = (state.tasks||[]).find(t=>t.id===taskId);
+  if(!task) return;
+  if(task.completionMode==='fixed' || task.completionMode==='until_done'){
+    const s = (task.subtasks||[]).find(s=>s.id===subtaskId);
+    if(s){ s.done = !s.done; s.completedOn = s.done ? dateStr : null; }
+  } else {
+    if(!state.subtaskDone) state.subtaskDone = {};
+    if(!state.subtaskDone[dateStr]) state.subtaskDone[dateStr] = {};
+    if(!state.subtaskDone[dateStr][taskId]) state.subtaskDone[dateStr][taskId] = {};
+    state.subtaskDone[dateStr][taskId][subtaskId] = !state.subtaskDone[dateStr][taskId][subtaskId];
+  }
   persist();
   renderCurrentScreenSoft();
 }
@@ -2657,6 +2711,7 @@ let taskFormKind = 'puntual';
 let taskFormFreq = 'diario';
 let taskFormWeekdays = [];
 let taskFormSubtasks = [];
+let taskFormCompletionMode = 'reset';
 
 function openTaskForm(taskId, presetDate){
   const task = taskId ? (state.tasks||[]).find(t=>t.id===taskId) : null;
@@ -2676,6 +2731,8 @@ function openTaskForm(taskId, presetDate){
   renderTaskWeekdaysRow();
   taskFormSubtasks = (task && task.subtasks) ? JSON.parse(JSON.stringify(task.subtasks)) : [];
   renderTaskSubtasksRow();
+  taskFormCompletionMode = (task && task.completionMode) ? task.completionMode : 'reset';
+  setTaskCompletionMode(taskFormCompletionMode);
   setTaskKind(task ? task.kind : 'puntual');
   setTaskFreq((task && task.freq) ? task.freq : 'diario');
   document.getElementById('task-delete-btn').style.display = task ? '' : 'none';
@@ -2691,6 +2748,7 @@ function setTaskKind(kind){
   });
   document.getElementById('task-puntual-fields').style.display = kind==='puntual' ? '' : 'none';
   document.getElementById('task-recurrente-fields').style.display = kind==='recurrente' ? '' : 'none';
+  document.getElementById('task-completion-mode-group').style.display = kind==='recurrente' ? '' : 'none';
 }
 
 function setTaskFreq(freq){
@@ -2749,14 +2807,42 @@ function removeTaskSubtask(id){
   renderTaskSubtasksRow();
 }
 
+// Modo de finalización de la tarea (y de todas sus subtareas): comparten uno solo.
+// 'reset'      -> el check es por día, se desmarca en cada nueva ocurrencia (hábito).
+// 'fixed'      -> el check es fijo: se marca una vez y queda marcado siempre, sin
+//                 depender del día, hasta que se desmarque a mano.
+// 'until_done' -> sigue apareciendo cada día como recordatorio hasta que se marca;
+//                 una vez marcada, deja de aparecer en los días siguientes.
+function setTaskCompletionMode(mode){
+  taskFormCompletionMode = mode;
+  document.querySelectorAll('#task-completion-mode-row .toggle-pill').forEach(p=>{
+    const on = p.dataset.mode===mode;
+    p.classList.toggle('on', on);
+    p.style.background = on ? 'var(--text)' : ''; p.style.borderColor = on ? 'var(--text)' : '';
+  });
+}
+
 function saveTaskForm(){
   const title = document.getElementById('task-title').value.trim();
   if(!title){ showToast('Ponle un título a la tarea'); return; }
   const id = document.getElementById('task-id').value || uid('task');
+  const existingTask = (state.tasks||[]).find(t=>t.id===id);
   const notes = document.getElementById('task-notes').value.trim();
   const time = document.getElementById('task-time').value || null;
-  const subtasks = taskFormSubtasks.map(s=>({id:s.id, title:(s.title||'').trim()})).filter(s=>s.title);
-  const task = { id, title, notes, time, kind: taskFormKind, archived:false, subtasks };
+  // Al reconstruir las subtareas desde el formulario, se conserva su estado "hecho"
+  // (y la fecha en que se completó) para los modos 'fixed'/'until_done', que no
+  // dependen del día y por tanto no viven en state.subtaskDone.
+  const subtasks = taskFormSubtasks
+    .map(s=>({id:s.id, title:(s.title||'').trim(), done: !!s.done, completedOn: s.completedOn||null}))
+    .filter(s=>s.title);
+  const completionMode = taskFormKind==='recurrente' ? taskFormCompletionMode : 'reset';
+  const task = {
+    id, title, notes, time, kind: taskFormKind, archived:false, subtasks, completionMode,
+    // Mismo motivo: el check de la propia tarea (modos 'fixed'/'until_done') se guarda
+    // en la tarea, no por fecha, así que hay que preservarlo al editar y volver a guardar.
+    done: existingTask ? !!existingTask.done : false,
+    completedOn: existingTask ? (existingTask.completedOn||null) : null,
+  };
 
   if(taskFormKind==='puntual'){
     const date = document.getElementById('task-date').value;
@@ -2811,16 +2897,18 @@ function deleteCurrentTask(){
 
 function describeTaskSchedule(t){
   const timePart = t.time ? ` · 🕐 ${t.time}` : '';
+  const modeLabels = {fixed:' · 📌 fijo', until_done:' · ✅ hasta completarla'};
+  const modePart = (t.kind==='recurrente' && modeLabels[t.completionMode]) ? modeLabels[t.completionMode] : '';
   if(t.kind==='puntual'){
     const d = strToDate(t.date);
     return `📌 ${d.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}${timePart}`;
   }
-  if(t.freq==='diario') return `🔁 ${(t.every||1)>1?`Cada ${t.every} días`:'Todos los días'}${timePart}`;
-  if(t.freq==='semanal') return `🔁 ${(t.weekdays||[]).map(d=>TASK_WEEKDAY_SHORT[d]).join(' ')}${timePart}`;
-  if(t.freq==='mensual') return `🔁 Día ${t.monthDay} de cada mes${timePart}`;
+  if(t.freq==='diario') return `🔁 ${(t.every||1)>1?`Cada ${t.every} días`:'Todos los días'}${timePart}${modePart}`;
+  if(t.freq==='semanal') return `🔁 ${(t.weekdays||[]).map(d=>TASK_WEEKDAY_SHORT[d]).join(' ')}${timePart}${modePart}`;
+  if(t.freq==='mensual') return `🔁 Día ${t.monthDay} de cada mes${timePart}${modePart}`;
   if(t.freq==='anual'){
     const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-    return `🔁 ${t.annualDay} de ${meses[(t.annualMonth||1)-1]}, cada año${timePart}`;
+    return `🔁 ${t.annualDay} de ${meses[(t.annualMonth||1)-1]}, cada año${timePart}${modePart}`;
   }
   return '';
 }
@@ -3002,25 +3090,24 @@ function renderPlannedListInline(dateStr, items){
   const renderTaskRow = ({task, done})=>{
     const timePart = task.time ? `🕐 ${task.time}` : '';
     const sub = [timePart, task.notes||''].filter(Boolean).join(' · ');
-    const hasSubtasks = task.subtasks && task.subtasks.length>0;
+    // Solo se muestran las subtareas que "tocan" en esta fecha: en modo 'until_done'
+    // las ya completadas en un día anterior dejan de listarse a partir del siguiente.
+    const visibleSubtasks = visibleSubtasksForDate(task, dateStr);
+    const hasSubtasks = visibleSubtasks.length>0;
     const isExpanded = hasSubtasks && !!calExpandedTasks[calTaskCollapseKey(dateStr, task.id)];
-    // Estado "hecho" de cada subtarea para ESTA fecha concreta: al ser una tarea
-    // recurrente, cada ocurrencia (día) tiene su propio checklist, que empieza
-    // siempre sin marcar en una repetición nueva.
-    const subDoneMap = (state.subtaskDone && state.subtaskDone[dateStr] && state.subtaskDone[dateStr][task.id]) || {};
-    const subDoneCount = hasSubtasks ? task.subtasks.filter(s=>subDoneMap[s.id]).length : 0;
+    const subDoneCount = hasSubtasks ? visibleSubtasks.filter(s=>isSubtaskDoneOn(task, s.id, dateStr)).length : 0;
     const row = `<div class="planned-item">
       <div class="planned-check ${done?'done':''}" onclick="toggleTaskDone('${task.id}','${dateStr}')">${done?'✓':''}</div>
       <div class="planned-body" style="cursor:pointer;" onclick="openTaskForm('${task.id}')">
-        <div class="planned-name ${done?'done':''}">${task.icon||'✅'} ${task.title}${hasSubtasks?` <span style="font-size:11px;color:var(--text3);font-weight:700;">(${subDoneCount}/${task.subtasks.length})</span>`:''}</div>
+        <div class="planned-name ${done?'done':''}">${task.icon||'✅'} ${task.title}${hasSubtasks?` <span style="font-size:11px;color:var(--text3);font-weight:700;">(${subDoneCount}/${visibleSubtasks.length})</span>`:''}</div>
         <div class="planned-sub">${sub}</div>
       </div>
       ${hasSubtasks?`<button class="btn-icon-sm" title="${isExpanded?'Ocultar subtareas':'Ver subtareas'}" onclick="toggleCalTaskCollapse('${dateStr}','${task.id}')">${isExpanded?'▾':'▸'}</button>`:''}
     </div>`;
     const subtasksBlock = (hasSubtasks && isExpanded) ? `
       <div style="margin:0 0 8px 30px;">
-        ${task.subtasks.map(s=>{
-          const sd = !!subDoneMap[s.id];
+        ${visibleSubtasks.map(s=>{
+          const sd = isSubtaskDoneOn(task, s.id, dateStr);
           return `<div class="planned-item" style="padding:5px 0;">
             <div class="planned-check ${sd?'done':''}" style="width:18px;height:18px;" onclick="toggleSubtaskDone('${task.id}','${s.id}','${dateStr}')">${sd?'✓':''}</div>
             <div class="planned-body">
