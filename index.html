@@ -2047,8 +2047,13 @@ async function uploadConflictBackup(payload){
   },body:JSON.stringify(payload,null,2)});
  }catch(e){console.warn('No se pudo guardar copia de conflicto',e);}
 }
-async function dropboxUpload(){
- if(!await dropboxEnsureToken()){setSync('err');return;}setSync('busy');
+async function dropboxUpload(showErrors=false){
+ if(!await dropboxEnsureToken()){
+  setSync('err');
+  if(showErrors)alert('Dropbox: no se pudo renovar la sesión. Prueba a reconectar.');
+  return false;
+ }
+ setSync('busy');
  const payload=stateForPortableSave();
  try{
   const db=state.dropbox;
@@ -2058,13 +2063,15 @@ async function dropboxUpload(){
    await uploadConflictBackup(payload);
    setSync('err');
    if(currentScreen==='settings')document.getElementById('dbStatus').innerHTML='<span class="pill amber">⚠ Conflicto entre dispositivos</span> · no se sobrescribió Dropbox; se guardó una copia local en /conflicts/';
-   return;
+   if(showErrors)alert('Dropbox ha cambiado en otro dispositivo. No se ha sobrescrito: se guardó una copia local en /conflicts/.');
+   return false;
   }
   if(!res.ok)throw new Error('HTTP '+res.status);
   const meta=await res.json().catch(()=>({}));
   if(meta.rev)db.lastRev=meta.rev;
   db.lastSync=Date.now();db.localDirty=false;saveLocal(false);setSync('ok');if(currentScreen==='settings')renderSettings();
- }catch(e){console.error(e);setSync('err');}
+  return true;
+ }catch(e){console.error(e);setSync('err');if(showErrors)alert('Dropbox: '+e.message);return false;}
 }
 
 function rowTs(x){return Number(x?.updatedAt||x?.reviewedAt||x?.at||x?.createdAt||0);}
@@ -2107,14 +2114,36 @@ function mergeStates(localState,remoteState){
  out.practiceOverrides=Object.assign({},l.practiceOverrides||{},r.practiceOverrides||{});
  return normalizeState(out);
 }
-async function dropboxDownloadAndMerge(){
- if(!await dropboxEnsureToken()){setSync('err');return false;}
+// Dropbox es la fuente canónica cuando se pulsa sincronizar/recargar y no hay cambios locales pendientes.
+// Conservamos históricos de ambos lados, pero programa/Atlas/progresión/configuración se toman del remoto.
+// No usamos updatedAt para decidir esto: saveLocal() actualiza ese sello incluso por operaciones locales no clínicas,
+// por lo que podía impedir que un datos.json reemplazado manualmente en Dropbox se recargase.
+function mergeStatesRemotePreferred(localState,remoteState){
+ const l=migrateState(clone(localState)),r=migrateState(clone(remoteState));
+ const out=clone(r);
+ out.logs=mergeArrayById(l.logs,r.logs,'id');
+ out.tasks=mergeArrayById(l.tasks,r.tasks,'id');
+ out.medicalAlerts=mergeArrayById(l.medicalAlerts,r.medicalAlerts,'sourceLogId');
+ out.regionProgressionEvents=mergeArrayById(l.regionProgressionEvents,r.regionProgressionEvents,'id');
+ out.practiceLogs=mergeArrayById(l.practiceLogs,r.practiceLogs,'id');
+ out.manualSchedule=mergeManualSchedule(l.manualSchedule,r.manualSchedule);
+ out.pendingReviews=[...new Set([...(l.pendingReviews||[]),...(r.pendingReviews||[])])].filter(id=>out.logs.some(x=>x.id===id&&!x.nextDayStatus));
+ out.taskDone=Object.assign({},l.taskDone||{},r.taskDone||{});
+ out.regionSessionEvaluations=Object.assign({},l.regionSessionEvaluations||{},r.regionSessionEvaluations||{});
+ out.practiceOverrides=Object.assign({},l.practiceOverrides||{},r.practiceOverrides||{});
+ return normalizeState(out);
+}
+async function dropboxDownloadAndMerge(showErrors=false){
+ if(!await dropboxEnsureToken()){
+  setSync('err');
+  if(showErrors)alert('Dropbox: no se pudo renovar la sesión. Prueba a reconectar.');
+  return false;
+ }
  setSync('busy');
  try{
   const res=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:'Bearer '+state.dropbox.accessToken,'Dropbox-API-Arg':JSON.stringify({path:DROPBOX_FILE_PATH})}});
   if(res.status===409){
-   if(hasPrivateProgramData()){await dropboxUpload();return true;}
-   throw new Error('Dropbox no contiene datos.json y este dispositivo aún no tiene el programa privado cargado. Importa primero datos.json.');
+   throw new Error('Dropbox no contiene /datos.json en la carpeta accesible por esta app.');
   }
   if(!res.ok)throw new Error('HTTP '+res.status);
   const metaRaw=res.headers.get('Dropbox-API-Result');let meta={};try{meta=metaRaw?JSON.parse(metaRaw):{};}catch(_e){}
@@ -2123,20 +2152,42 @@ async function dropboxDownloadAndMerge(){
   if(remoteVer<MIN_MIGRATABLE_SCHEMA)throw new Error('El datos.json remoto es demasiado antiguo; importa primero el V7.');
   const candidate=migrateState(remote),valid=validatePrivateDataset(candidate);if(!valid.ok)throw new Error('datos.json remoto inválido: '+valid.reason);
   const localDb=clone(db);
-  const merged=mergeStates(state,candidate);
+  const merged=mergeStatesRemotePreferred(state,candidate);
   state=merged;state.dropbox=localDb;
   if(meta.rev)localDb.lastRev=meta.rev;
   localDb.lastSync=Date.now();localDb.localDirty=false;
   saveLocal(false);setSync('ok');renderAll();
   return true;
- }catch(e){console.error(e);setSync('err');return false;}
+ }catch(e){
+  console.error(e);setSync('err');
+  if(showErrors)alert('Dropbox: '+e.message);
+  return false;
+ }
 }
-async function dropboxSyncNow(){if(!state.dropbox.connected)return alert('Conecta Dropbox primero.');const ok=await dropboxDownloadAndMerge();if(ok)await dropboxUpload();}
+async function dropboxSyncNow(){
+ if(!state.dropbox.connected)return alert('Conecta Dropbox primero.');
+ // Si hay cambios locales aún no enviados, se suben primero. El rev de Dropbox impide pisar cambios remotos.
+ if(state.dropbox.localDirty){
+  const up=await dropboxUpload(true);
+  if(!up)return;
+ }
+ // Después se recarga el datos.json remoto como fuente canónica.
+ const ok=await dropboxDownloadAndMerge(true);
+ if(ok)toast('Dropbox sincronizado y datos.json recargado.');
+}
 function dropboxDisconnect(){state.dropbox.connected=false;state.dropbox.accessToken='';state.dropbox.refreshToken='';state.dropbox.expiresAt=0;state.dropbox.lastRev='';state.dropbox.localDirty=false;saveLocal(false);setSync('');renderSettings();}
 
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.dropbox.connected)dropboxDownloadAndMerge();});
+async function dropboxSafeSync(){
+ if(!state.dropbox.connected)return false;
+ if(state.dropbox.localDirty){
+  const up=await dropboxUpload(false);
+  if(!up)return false;
+ }
+ return await dropboxDownloadAndMerge(false);
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.dropbox.connected)dropboxSafeSync();});
 function renderAll(){if(currentScreen==='today')renderToday();if(currentScreen==='calendar')renderCalendar();if(currentScreen==='progress')renderProgress();if(currentScreen==='atlas')renderAtlas();if(currentScreen==='audit')renderAudit();if(currentScreen==='settings')renderSettings();}
-async function init(){if(hasPrivateProgramData()&&programStarted())maybeAdvanceRegions();renderToday();setSync(state.dropbox.connected?'ok':'');await handleDropboxRedirect();if(state.dropbox.connected){const wasDirty=!!state.dropbox.localDirty;const ok=await dropboxDownloadAndMerge();if(ok&&wasDirty)await dropboxUpload();}}
+async function init(){if(hasPrivateProgramData()&&programStarted())maybeAdvanceRegions();renderToday();setSync(state.dropbox.connected?'ok':'');await handleDropboxRedirect();if(state.dropbox.connected)await dropboxSafeSync();}
 init();
 </script>
 </body></html>
