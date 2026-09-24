@@ -78,7 +78,7 @@ main{max-width:720px;margin:auto}.screen{display:none}.screen.active{display:blo
 <body>
 <div class="top"><div class="brand">🧭 <span>Sport-Rehab Auto</span></div><button class="iconbtn" onclick="showScreen('settings')" title="Sincronización"><span id="syncDot" class="sync"></span></button></div>
 <main>
-<section id="screen-today" class="screen active">
+<section id="screen-today" class="screen">
  <div class="hero"><div class="eyebrow" id="todayDate"></div><h1>Hoy</h1><div class="sub" id="todaySubtitle"></div></div>
  <div id="medicalBanner"></div>
  <div id="pendingWrap"></div>
@@ -95,8 +95,10 @@ main{max-width:720px;margin:auto}.screen{display:none}.screen.active{display:blo
  <div class="atlas-toolbar"><button class="btn primary" onclick="openExerciseEditor()">＋ Añadir ejercicio/actividad</button><button class="btn secondary" onclick="exportAudit()">Exportar auditoría</button></div>
  <div id="atlasList"></div>
 </section>
-<section id="screen-calendar" class="screen">
- <div class="hero"><div class="eyebrow">Plan y registros</div><h1>Calendario</h1><div class="sub">Consulta cualquier día. El plan V5 se calcula con el estado regional actual; los registros ya realizados se muestran aparte.</div></div>
+<section id="screen-calendar" class="screen active">
+ <div class="hero"><div class="eyebrow">Plan y registros</div><h1>Calendario</h1><div class="sub">Consulta cualquier día. El plan se calcula con el estado regional actual; los registros ya realizados se muestran aparte.</div></div>
+ <div id="calendarMedicalBanner"></div>
+ <div id="calendarPendingWrap"></div>
  <div class="cal-head"><div class="cal-title" id="calTitle"></div><div class="cal-nav"><button class="iconbtn" onclick="calMove(-1)">‹</button><button class="iconbtn" onclick="calToday()">•</button><button class="iconbtn" onclick="calMove(1)">›</button></div></div>
  <div class="cal-grid" id="calDow"></div><div class="cal-grid" id="calGrid"></div>
  <div id="calDayDetail"></div>
@@ -147,8 +149,7 @@ main{max-width:720px;margin:auto}.screen{display:none}.screen.active{display:blo
 </section>
 </main>
 <nav class="nav">
- <button id="nav-today" class="active" onclick="showScreen('today')"><span>🏠</span>Hoy</button>
- <button id="nav-calendar" onclick="showScreen('calendar')"><span>📅</span>Calendario</button>
+ <button id="nav-calendar" class="active" onclick="showScreen('calendar')"><span>📅</span>Calendario</button>
  <button id="nav-progress" onclick="showScreen('progress')"><span>🚦</span>Progreso</button>
  <button id="nav-atlas" onclick="showScreen('atlas')"><span>📖</span>Atlas</button>
  <button id="nav-pranayama" onclick="showScreen('pranayama')"><span>🧩</span>Prácticas</button>
@@ -335,7 +336,7 @@ function blankState(){
   logs:[],pendingReviews:[],regionSessionEvaluations:{},practiceLogs:[],practiceState:{pranayama:{level:1,lastAdvance:null},nightMeditation:{level:1,lastAdvance:null},powerBreathe:{phase:'build',maintenanceEligible:false}},practiceMedia:{guidedMorning:{type:'',fileName:''}},
   medicalReviewRequired:false,medicalAlerts:[],
   regionProgressionEvents:[],manualSchedule:{},
-  tasks:[],taskDone:{},ui:{lastScreen:"today"},
+  tasks:[],taskDone:{},ui:{lastScreen:"calendar"},
   dropbox:{appKey:"",redirectUri:"",accessToken:"",refreshToken:"",expiresAt:0,connected:false,lastSync:0,codeVerifier:"",lastRev:"",localDirty:false}
  };
 }
@@ -348,7 +349,7 @@ let state=loadState();
 if(!state.manualSchedule)state.manualSchedule={};
 if(!state.tasks)state.tasks=[];
 if(!state.taskDone)state.taskDone={};
-let currentScreen='today';
+let currentScreen='calendar';
 let dropboxSyncTimer=null;
 
 function clone(x){return JSON.parse(JSON.stringify(x));}
@@ -493,7 +494,7 @@ function showScreen(name){
  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
  document.getElementById('screen-'+name).classList.add('active');
  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
- document.getElementById('nav-'+name).classList.add('active');
+ const navBtn=document.getElementById('nav-'+name);if(navBtn)navBtn.classList.add('active');
  if(name==='today')renderToday();
  if(name==='calendar')renderCalendar();
  if(name==='progress')renderProgress();
@@ -579,19 +580,22 @@ function calendarWeek(){
  if(!programStarted())return 0;
  const start=parseDate(state.profile.startDate); const now=new Date();
  const diff=dayDiff(new Date(now.getFullYear(),now.getMonth(),now.getDate()),start);
- return Math.max(1,Math.floor(diff/7)+1);
+ if(diff<0)return 0;
+ return Math.floor(diff/7)+1;
 }
 
 function calendarBlock(){
- const w=calendarWeek(); if(!w)return 1;
+ const w=calendarWeek(); if(!w)return 0;
  for(const b of state.program.blocks) if(w>=b.weeks[0]&&w<=b.weeks[1]) return b.id;
- return w>36?10:1;
+ return w>36?10:0;
 }
 function calendarWeekAt(ds){
  if(!programStarted())return 0;
- const start=parseDate(state.profile.startDate), d=parseDate(ds); const diff=dayDiff(d,start); return Math.max(1,Math.floor(diff/7)+1);
+ const start=parseDate(state.profile.startDate), d=parseDate(ds); const diff=dayDiff(d,start);
+ if(diff<0)return 0;
+ return Math.floor(diff/7)+1;
 }
-function calendarBlockAt(ds){const w=calendarWeekAt(ds);if(!w)return 1;for(const b of state.program.blocks)if(w>=b.weeks[0]&&w<=b.weeks[1])return b.id;return w>36?10:1;}
+function calendarBlockAt(ds){const w=calendarWeekAt(ds);if(!w)return 0;for(const b of state.program.blocks)if(w>=b.weeks[0]&&w<=b.weeks[1])return b.id;return w>36?10:0;}
 
 Object.values(state.regions||{}).forEach(r=>{if(r.recoveryGreensRemaining===undefined)r.recoveryGreensRemaining=0;if(r.recoveryReason===undefined)r.recoveryReason=null;});
 
@@ -863,6 +867,7 @@ function renderPracticeButtons(it,ds=todayStr()){
 }
 
 function todayPlanItems(){
+ if(!programStarted()||todayStr()<state.profile.startDate)return [];
  const d=new Date(),dow=mondayIndex(d),groups=[];
  const morningBase=state.program.morning[String(dow)]||state.program.morning[dow]||[];
  const morningRaw=applyPranayamaBlock(morningBase,dow,calendarBlock(),'morning');
@@ -906,6 +911,7 @@ function todayPlanItems(){
 }
 
 function planItemsForDate(ds){
+ if(!programStarted()||ds<state.profile.startDate)return [];
  const d=parseDate(ds),dow=mondayIndex(d),cap=calendarBlockAt(ds),groups=[];
  const morningBase=state.program.morning[String(dow)]||[];
  const morningRaw=applyPranayamaBlock(morningBase,dow,cap,'morning');
@@ -1071,9 +1077,10 @@ function pendingReviewLogs(){
    .filter(l=>ids.has(l.id)&&l.date<todayStr())
    .sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt-b.createdAt);
 }
-function renderPending(){
+function renderPending(targetId='pendingWrap'){
  const pending=pendingReviewLogs();
- const w=document.getElementById('pendingWrap');
+ const w=document.getElementById(targetId);
+ if(!w)return;
  if(!pending.length){w.innerHTML='';return;}
  w.innerHTML=`<div class="card pending"><h2>⏳ Revisión pendiente · ${pending.length}</h2><div class="small">Para cerrar el seguimiento necesito saber cómo respondió tu cuerpo al día siguiente. Los rojos inmediatos también se revisan.</div>${pending.map(l=>`<div class="row between" style="margin-top:9px"><span class="small"><b>${l.exId}</b> · ${esc(trackedItem(l.exId)?.name||l.exId)}${l.immediateCritical?' · 🔴 rojo inmediato':''}</span><button class="btn secondary" onclick="openReview('${l.id}')">Revisar</button></div>`).join('')}</div>`;
 }
@@ -1202,7 +1209,7 @@ function saveNextDayReview(){
  }
  finalizeRegionSessionIfReady(l.date,l.region);
  maybeAdvanceRegions();
- persist();closeModal('reviewModal');renderToday();
+ persist();closeModal('reviewModal');renderAll();
 }
 function prescriptionForDate(code,date){
  const e=state.exercises[code]; if(!e)return'';
@@ -1628,14 +1635,23 @@ function saveManualSchedule(){
 function deleteManualSchedule(ds,id){state.manualSchedule[ds]=(state.manualSchedule[ds]||[]).filter(x=>x.id!==id);if(!state.manualSchedule[ds].length)delete state.manualSchedule[ds];persist();renderCalendar();}
 
 let calView=new Date(),calSelected=todayStr();const CAL_DOW=['L','M','X','J','V','S','D'];
+function renderCalendarAlerts(){
+ const b=document.getElementById('calendarMedicalBanner');
+ if(b)b.innerHTML=state.medicalReviewRequired?'<div class="danger-notice"><b>Valoración sanitaria indicada.</b> La progresión automática está bloqueada en la zona afectada por una señal de alarma registrada.</div>':'';
+ renderPending('calendarPendingWrap');
+}
 function calMove(n){calView=new Date(calView.getFullYear(),calView.getMonth()+n,1);renderCalendar();}function calToday(){calView=new Date();calSelected=todayStr();renderCalendar();}function calSelect(ds){calSelected=ds;renderCalendar();}
 function renderCalendar(){
+ renderCalendarAlerts();
  document.getElementById('calTitle').textContent=calView.toLocaleDateString('es-ES',{month:'long',year:'numeric'});document.getElementById('calDow').innerHTML=CAL_DOW.map(x=>`<div class="cal-dow">${x}</div>`).join('');
  const y=calView.getFullYear(),m=calView.getMonth(),first=new Date(y,m,1),off=mondayIndex(first),days=new Date(y,m+1,0).getDate(),prev=new Date(y,m,0).getDate();const cells=[];for(let i=0;i<off;i++)cells.push(new Date(y,m-1,prev-off+i+1));for(let d=1;d<=days;d++)cells.push(new Date(y,m,d));while(cells.length%7)cells.push(new Date(y,m+1,cells.length-off-days+1));
  document.getElementById('calGrid').innerHTML=cells.map(d=>{const ds=dateStr(d),other=d.getMonth()!==m,has=(state.logs.some(l=>l.date===ds)||(state.manualSchedule[ds]||[]).length||getTasksForDate(ds).length);return `<div class="cal-day ${other?'other':''} ${ds===todayStr()?'today':''} ${ds===calSelected?'sel':''} ${has?'has':''}" onclick="calSelect('${ds}')"><div>${d.getDate()}</div>${has?'<div class="cal-dotrow"><i class="cal-dot"></i></div>':''}</div>`}).join('');renderCalendarDay();
 }
 function renderCalendarDay(){
- const ds=calSelected,d=parseDate(ds),groups=planItemsForDate(ds),manual=state.manualSchedule[ds]||[],logs=state.logs.filter(l=>l.date===ds);let html=`<div class="card"><div class="row between"><h2 style="margin:0">${d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</h2><div class="row"><button class="btn secondary" onclick="openTaskEditor(null,'${ds}')">＋ Tarea</button><button class="btn primary" onclick="openManualSchedule(null,'${ds}')">＋ Ejercicio</button></div></div><div class="small">Semana ${calendarWeekAt(ds)} · techo B${calendarBlockAt(ds)} · vista V5 calculada con el estado regional actual.</div></div>`;
+ const ds=calSelected,d=parseDate(ds),groups=planItemsForDate(ds),manual=state.manualSchedule[ds]||[],logs=state.logs.filter(l=>l.date===ds);
+ const beforeStart=programStarted()&&ds<state.profile.startDate;
+ const calInfo=!programStarted()?'Programa sin fecha de inicio.':beforeStart?`Antes del inicio del programa · empieza el ${parseDate(state.profile.startDate).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}.`:`Semana ${calendarWeekAt(ds)} · techo B${calendarBlockAt(ds)} · plan calculado con el estado regional actual.`;
+ let html=`<div class="card"><div class="row between"><h2 style="margin:0">${d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</h2><div class="row"><button class="btn secondary" onclick="openTaskEditor(null,'${ds}')">＋ Tarea</button><button class="btn primary" onclick="openManualSchedule(null,'${ds}')">＋ Ejercicio</button></div></div><div class="small">${calInfo}</div></div>`;
  groups.forEach(g=>{html+=`<div class="group"><div class="group-title">${g.label}</div>${g.items.map(it=>renderCalendarPlanItem(it)).join('')}</div>`});
  const dayTasks=getTasksForDate(ds);html+=`<div class="group"><div class="group-title">Tareas personales</div>${renderTasksForDate(ds)}</div>`;
  if(manual.length){html+=`<div class="group"><div class="group-title">Añadido por ti</div>${manual.map(x=>{const e=state.exercises[x.exId];const done=state.logs.some(l=>l.date===ds&&l.sourceManualId===x.id);const canLog=ds<=todayStr();return `<div class="item ${done?'done':''}"><div class="item-main" onclick="openAtlas('${x.exId}')"><div class="item-name">${done?'✓':'📝'} ${esc(e?.name||x.exId)}</div><div class="item-dose">${esc(x.prescription||'')}${x.note?' · '+esc(x.note):''}</div></div>${canLog?`<button class="iconbtn" title="Registrar" onclick="openLog('${x.exId}','${String(x.prescription||'').replace(/'/g,"&#39;")}', '${ds}', '${x.id}')">${done?'✓':'＋'}</button>`:''}<button class="iconbtn" onclick="openManualSchedule('${x.id}','${ds}','${x.exId}')">✏️</button><button class="iconbtn" onclick="deleteManualSchedule('${ds}','${x.id}')">✕</button></div>`}).join('')}</div>`}
@@ -1936,7 +1952,7 @@ function renderSettings(){
  document.getElementById('dbKey').value=state.dropbox.appKey||'';document.getElementById('dbRedirect').value=state.dropbox.redirectUri||location.href.split('?')[0].split('#')[0];
  document.getElementById('dbStatus').innerHTML=state.dropbox.connected?`<span class="pill green">● Conectado</span> · última sync ${state.dropbox.lastSync?new Date(state.dropbox.lastSync).toLocaleString('es-ES'):'—'}`:'<span class="pill neutral">● No conectado</span>';
 }
-function saveStartDate(){if(!hasPrivateProgramData())return toast('Carga primero datos.json desde Dropbox o impórtalo.');const v=document.getElementById('startDate').value;if(!v)return toast('Elige la fecha real en que empiezas.');state.profile.startDate=v;persist();maybeAdvanceRegions();renderAll();toast('Inicio del programa guardado.');}
+function saveStartDate(){if(!hasPrivateProgramData())return toast('Carga primero datos.json desde Dropbox o impórtalo.');const v=document.getElementById('startDate').value;if(!v)return toast('Elige la fecha real en que empiezas.');state.profile.startDate=v;calSelected=todayStr()>=v?todayStr():v;calView=parseDate(calSelected);persist();maybeAdvanceRegions();renderAll();toast('Inicio del programa guardado.');}
 function startProgramToday(){document.getElementById('startDate').value=todayStr();saveStartDate();}
 function stateForPortableSave(){
  const safe=clone(state);
@@ -1968,7 +1984,7 @@ function importJSON(ev){
      persist();
      if(hasPrivateProgramData()&&programStarted())maybeAdvanceRegions();
      input.value='';
-     showScreen('today');
+     showScreen('calendar');
      renderAll();
      toast('datos.json importado correctamente.');
    }catch(e){
@@ -2003,7 +2019,7 @@ function resetProgress(){
  fresh.regions=clone(state.regions||{});
  Object.values(fresh.regions).forEach(r=>{r.block=1;r.greenStreak=0;r.yellowStreak=0;r.redStreak=0;r.light='neutral';r.locked=false;r.recoveryGreensRemaining=0;r.lastBlockAdvanceDate=null;r.lastDecision='';});
  fresh.exerciseState={};Object.keys(fresh.exercises).forEach(id=>fresh.exerciseState[id]=blankExerciseState());
- state=fresh;persist();showScreen('today');renderAll();toast('Progreso reiniciado.');
+ state=fresh;persist();showScreen('calendar');renderAll();toast('Progreso reiniciado.');
 }
 
 /* Dropbox OAuth2 PKCE — adaptado del HTML original */
@@ -2036,7 +2052,14 @@ async function dropboxEnsureToken(){
  if(!db.refreshToken||!db.appKey)return false;
  try{const body=new URLSearchParams({grant_type:'refresh_token',refresh_token:db.refreshToken,client_id:db.appKey});const res=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});const x=await res.json();if(x.access_token){db.accessToken=x.access_token;db.expiresAt=Date.now()+(x.expires_in||14400)*1000;saveLocal();return true;}}catch(e){console.error(e)}return false;
 }
-function scheduleDropboxSync(){if(!state.dropbox.connected)return;clearTimeout(dropboxSyncTimer);dropboxSyncTimer=setTimeout(dropboxUpload,1800);}
+function scheduleDropboxSync(){
+ if(!state.dropbox.connected)return;
+ // Nunca programes una subida automática si el estado privado no es un dataset completo y válido.
+ // Esto evita que un HTML público recién abierto pueda sobrescribir /datos.json con un estado vacío.
+ const valid=validatePrivateDataset(migrateState(clone(state)));
+ if(!valid.ok)return;
+ clearTimeout(dropboxSyncTimer);dropboxSyncTimer=setTimeout(dropboxUpload,1800);
+}
 function setSync(mode){const d=document.getElementById('syncDot');d.className='sync '+(mode||'');}
 async function uploadConflictBackup(payload){
  try{
@@ -2048,6 +2071,14 @@ async function uploadConflictBackup(payload){
  }catch(e){console.warn('No se pudo guardar copia de conflicto',e);}
 }
 async function dropboxUpload(showErrors=false){
+ // Protección crítica: Dropbox jamás se sobrescribe con un estado local incompleto.
+ const localCandidate=migrateState(clone(state));
+ const localValid=validatePrivateDataset(localCandidate);
+ if(!localValid.ok){
+  setSync('err');
+  if(showErrors)alert('No se ha subido nada a Dropbox: los datos locales no forman un dataset completo. '+localValid.reason);
+  return false;
+ }
  if(!await dropboxEnsureToken()){
   setSync('err');
   if(showErrors)alert('Dropbox: no se pudo renovar la sesión. Prueba a reconectar.');
@@ -2150,7 +2181,10 @@ async function dropboxDownloadAndMerge(showErrors=false){
   const remote=await res.json(),db=state.dropbox,remoteVer=Number(remote&&remote.schemaVersion||0);
   if(remoteVer>CURRENT_SCHEMA)throw new Error(`Dropbox contiene schemaVersion ${remoteVer}. Esta app entiende hasta ${CURRENT_SCHEMA}.`);
   if(remoteVer<MIN_MIGRATABLE_SCHEMA)throw new Error('El datos.json remoto es demasiado antiguo; importa primero el V7.');
-  const candidate=migrateState(remote),valid=validatePrivateDataset(candidate);if(!valid.ok)throw new Error('datos.json remoto inválido: '+valid.reason);
+  const candidate=migrateState(remote),valid=validatePrivateDataset(candidate);if(!valid.ok){
+   const n=Array.isArray(candidate?.program?.blocks)?candidate.program.blocks.length:0;
+   throw new Error('datos.json remoto inválido: '+valid.reason+' (bloques detectados: '+n+').');
+  }
   const localDb=clone(db);
   const merged=mergeStatesRemotePreferred(state,candidate);
   state=merged;state.dropbox=localDb;
@@ -2166,14 +2200,15 @@ async function dropboxDownloadAndMerge(showErrors=false){
 }
 async function dropboxSyncNow(){
  if(!state.dropbox.connected)return alert('Conecta Dropbox primero.');
- // Si hay cambios locales aún no enviados, se suben primero. El rev de Dropbox impide pisar cambios remotos.
- if(state.dropbox.localDirty){
-  const up=await dropboxUpload(true);
-  if(!up)return;
- }
- // Después se recarga el datos.json remoto como fuente canónica.
+ // Sincronización manual = REMOTO PRIMERO. Así, sustituir datos.json en Dropbox realmente lo recarga
+ // y un estado local vacío o antiguo nunca puede pisarlo antes de leerlo.
  const ok=await dropboxDownloadAndMerge(true);
- if(ok)toast('Dropbox sincronizado y datos.json recargado.');
+ if(!ok)return;
+ // Tras adoptar el programa/Atlas/progresión remotos y fusionar historiales locales, guardamos esa fusión
+ // usando exactamente la revisión que acabamos de descargar. Si fallara, el dataset ya está cargado localmente.
+ const up=await dropboxUpload(false);
+ if(up)toast('Dropbox sincronizado y datos.json recargado.');
+ else toast('datos.json remoto recargado; no se pudo devolver la fusión a Dropbox.');
 }
 function dropboxDisconnect(){state.dropbox.connected=false;state.dropbox.accessToken='';state.dropbox.refreshToken='';state.dropbox.expiresAt=0;state.dropbox.lastRev='';state.dropbox.localDirty=false;saveLocal(false);setSync('');renderSettings();}
 
@@ -2187,7 +2222,7 @@ async function dropboxSafeSync(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.dropbox.connected)dropboxSafeSync();});
 function renderAll(){if(currentScreen==='today')renderToday();if(currentScreen==='calendar')renderCalendar();if(currentScreen==='progress')renderProgress();if(currentScreen==='atlas')renderAtlas();if(currentScreen==='audit')renderAudit();if(currentScreen==='settings')renderSettings();}
-async function init(){if(hasPrivateProgramData()&&programStarted())maybeAdvanceRegions();renderToday();setSync(state.dropbox.connected?'ok':'');await handleDropboxRedirect();if(state.dropbox.connected)await dropboxSafeSync();}
+async function init(){if(hasPrivateProgramData()&&programStarted())maybeAdvanceRegions();renderCalendar();setSync(state.dropbox.connected?'ok':'');await handleDropboxRedirect();if(state.dropbox.connected)await dropboxSafeSync();}
 init();
 </script>
 </body></html>
